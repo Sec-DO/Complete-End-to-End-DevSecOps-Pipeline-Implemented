@@ -9,8 +9,8 @@ pipeline {
     environment {
         AWS_REGION           = "${env.AWS_REGION ?: 'ap-south-1'}"
         ECR_REPO_NAME        = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
-        AWS_ACCOUNT_ID       = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
-        ECR_REPO_URI         = ''
+        AWS_ACCOUNT_ID       = "325698037625"
+        ECR_REPO_URI         = "325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr"
         IMAGE_TAG_BUILD      = "${BUILD_NUMBER}"
         IMAGE_TAG_COMMIT     = ""
         IMAGE_TAG_LATEST     = "latest"
@@ -100,18 +100,17 @@ pipeline {
             steps {
                 script { env.FAILED_STAGE = '6. Docker Multi-Stage Image Build' }
                 echo '=== STAGE 6: Building Production Multi-Stage Docker Image ==='
-                script {
-                    // Keyless IAM STS Authentication
-                    env.AWS_ACCOUNT_ID = sh(script: 'aws sts get-caller-identity --query Account --output text', returnStdout: true).trim()
-                    env.ECR_REPO_URI   = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.ECR_REPO_NAME}"
-                    echo "Target ECR URI: ${env.ECR_REPO_URI}"
-                }
                 sh '''
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
+                    if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
+                    ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+                    echo "Target ECR URI: ${ECR_URI}"
+
                     docker build \
                         -f docker/Dockerfile.app \
-                        -t ${ECR_REPO_URI}:${IMAGE_TAG_BUILD} \
-                        -t ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} \
-                        -t ${ECR_REPO_URI}:${IMAGE_TAG_LATEST} .
+                        -t ${ECR_URI}:${IMAGE_TAG_BUILD} \
+                        -t ${ECR_URI}:${IMAGE_TAG_COMMIT} \
+                        -t ${ECR_URI}:latest .
                 '''
             }
         }
@@ -121,13 +120,17 @@ pipeline {
                 script { env.FAILED_STAGE = '7. Trivy Container Image Scan' }
                 echo '=== STAGE 7: Trivy Container Image Security Vulnerability Scan ==='
                 sh '''
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
+                    if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
+                    ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+
                     trivy image \
                       --exit-code 0 \
                       --severity HIGH,CRITICAL \
                       -o reports/trivy-image-report.txt \
-                      ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} || true
+                      ${ECR_URI}:${IMAGE_TAG_BUILD} || true
 
-                    trivy image --severity HIGH,CRITICAL ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} || true
+                    trivy image --severity HIGH,CRITICAL ${ECR_URI}:${IMAGE_TAG_BUILD} || true
                 '''
             }
         }
@@ -137,12 +140,16 @@ pipeline {
                 script { env.FAILED_STAGE = '8. AWS ECR Keyless Login & Push' }
                 echo '=== STAGE 8: Authenticating and Pushing Container Image to Private AWS ECR ==='
                 sh '''
-                    aws ecr get-login-password --region ${AWS_REGION} | \
-                    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
+                    if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
+                    ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-                    docker push ${ECR_REPO_URI}:${IMAGE_TAG_BUILD}
-                    docker push ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT}
-                    docker push ${ECR_REPO_URI}:${IMAGE_TAG_LATEST}
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+                    docker push ${ECR_URI}:${IMAGE_TAG_BUILD}
+                    docker push ${ECR_URI}:${IMAGE_TAG_COMMIT}
+                    docker push ${ECR_URI}:latest
                 '''
             }
         }
@@ -153,16 +160,20 @@ pipeline {
                 echo '=== STAGE 9: Deploying to Production Application Server via Docker Swarm ==='
                 sshagent([env.SSH_CREDENTIAL_ID]) {
                     sh '''
+                        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
+                        if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
+                        ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+
                         ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
-                            docker pull ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} && \
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
+                            docker pull ${ECR_URI}:latest && \
                             docker swarm init 2>/dev/null || true && \
                             mkdir -p ~/secdo-swarm
                         "
                         scp deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml
                         ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
-                            export ECR_REPO_URI=${ECR_REPO_URI}
-                            export IMAGE_TAG=${IMAGE_TAG_COMMIT}
+                            export ECR_REPO_URI=${ECR_URI}
+                            export IMAGE_TAG=latest
                             cd ~/secdo-swarm && \
                             docker stack deploy -c docker-swarm.yml secdo_app --with-registry-auth
                         "
@@ -303,7 +314,6 @@ EOF
         failure {
             echo '=== ALERT: PIPELINE STAGE FAILURE DETECTED ==='
             script {
-                // Execute Zero-Downtime Swarm Rollback if SSH agent available
                 try {
                     sshagent([env.SSH_CREDENTIAL_ID]) {
                         sh '''
@@ -317,7 +327,6 @@ EOF
                     echo "Rollback Notice: SSH agent step skipped."
                 }
 
-                // Send Failure Email Notification detailing the EXACT FAILED STAGE
                 if (env.DEVSECOPS_TEAM_EMAIL) {
                     try {
                         emailext (
