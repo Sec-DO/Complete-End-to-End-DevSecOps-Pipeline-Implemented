@@ -10,9 +10,9 @@ echo "======================================"
 sudo apt update -y
 
 echo "======================================"
-echo " Installing Required Utilities"
+echo " Installing Required Utilities & PHP CLI"
 echo "======================================"
-sudo apt install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release unzip git maven net-tools htop jq
+sudo apt install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release unzip git maven net-tools htop jq php-cli
 
 echo "======================================"
 echo " Installing Java 21"
