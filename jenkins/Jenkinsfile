@@ -17,7 +17,7 @@ pipeline {
         APP_SERVER_IP        = "${env.APP_SERVER_IP ?: '10.0.20.60'}" // Deployed Private IP
         ALB_DNS_NAME         = "${env.ALB_DNS_NAME ?: 'secdo-alb-124066993.ap-south-1.elb.amazonaws.com'}" // Deployed ALB DNS Name
         SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
-        DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}"
+        DEVSECOPS_TEAM_EMAIL = "patilrahulprafulla1@gmail.com"
         FAILED_STAGE         = "Unknown Stage"
     }
 
@@ -309,8 +309,7 @@ EOF
                         </ul>
                         """,
                         mimeType: 'text/html',
-                        recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'CulpritsRecipientProvider']],
-                        to: "${env.DEVSECOPS_TEAM_EMAIL ?: env.BUILD_USER_EMAIL}",
+                        to: 'patilrahulprafulla1@gmail.com',
                         attachLog: true
                     )
                 } catch (Exception e) {
