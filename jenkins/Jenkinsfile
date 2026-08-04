@@ -10,7 +10,7 @@ pipeline {
         AWS_REGION           = "${env.AWS_REGION ?: 'ap-south-1'}"
         ECR_REPO_NAME        = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
         AWS_ACCOUNT_ID       = "325698037625"
-        ECR_REPO_URI         = "325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr"
+        ECR_REPO_URI         = "325698037625.dkr.ecr.ap-south-1.amazonaws.com/${ECR_REPO_NAME}"
         IMAGE_TAG_BUILD      = "${BUILD_NUMBER}"
         IMAGE_TAG_COMMIT     = ""
         IMAGE_TAG_LATEST     = "latest"
@@ -303,52 +303,6 @@ EOF
                 def appUrl = "${env.TARGET_URL}"
                 def sonarUrl = "http://${env.ALB_DNS_NAME}:9000"
 
-                // 1. Built-in Standard Mailer Step (Delivers HTML & Plain Text)
-                try {
-                    mail to: 'patilrahulprafulla1@gmail.com',
-                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: """✅ SecDO Pipeline Completed Successfully
-
-Field       Value
----------------------------------------------------------------------
-Project:    ${JOB_NAME}
-Build #:    #${BUILD_NUMBER}
-Status:     SUCCESS
-Branch:     ${env.BRANCH}
-Build URL:  ${jobBuildUrl}
-App URL:    ${appUrl}
-SonarQube:  ${sonarUrl}
-
-Pipeline Summary
----------------------------------------------------------------------
-1. Checkout Source Code:             ✅ Passed
-2. Build & Code Syntax Validation:   ✅ Passed
-3. SonarQube SAST Scan:              ✅ Passed
-4. SonarQube Quality Gate Check:     ✅ Passed
-5. Trivy Filesystem Scan:            ✅ Passed
-6. Docker Multi-Stage Image Build:   ✅ Passed
-7. Trivy Container Image Scan:       ✅ Passed
-8. AWS ECR Keyless Login & Push:     ✅ Passed
-9. Docker Swarm Cluster Deployment:  ✅ Passed
-10. Application Health Check Probe:  ✅ Passed
-11. OWASP ZAP DAST Scan:             ✅ Passed
-12. Consolidate Security Reports:    ✅ Passed
-
-Attached Reports:
-- Trivy Image Scan Report
-- OWASP ZAP HTML Report
-- DevSecOps Executive Summary
-
-The application was successfully built, scanned, deployed and verified.
-
-Regards,
-SecDO DevSecOps Pipeline
-"""
-                } catch (Exception e) {
-                    echo "Standard Mail Step Note: ${e.getMessage()}"
-                }
-
-                // 2. Extended Email Step with empty recipientProviders list
                 try {
                     emailext(
                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
@@ -358,68 +312,68 @@ SecDO DevSecOps Pipeline
                         <html>
                         <head>
                             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+                                table { border-collapse: collapse; width: 100%; max-width: 650px; margin-bottom: 20px; }
+                                th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                                th { background-color: #f2f2f2; color: #1e293b; }
+                                .success-header { color: #10b981; font-size: 22px; font-weight: bold; margin-bottom: 15px; }
+                                .badge-pass { background-color: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+                                a { color: #2563eb; text-decoration: none; }
+                                a:hover { text-decoration: underline; }
+                            </style>
                         </head>
                         <body>
 
-                        <h2 style="color:green;">✅ SecDO Pipeline Completed Successfully</h2>
+                        <div class="success-header">✅ SecDO Pipeline Completed Successfully</div>
 
-                        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
-                            <tr style="background-color: #f2f2f2;">
+                        <table>
+                            <tr>
                                 <th>Field</th>
                                 <th>Value</th>
                             </tr>
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
-                            <tr><td><b>Status</b></td><td><font color="green"><b>SUCCESS</b></font></td></tr>
+                            <tr><td><b>Status</b></td><td><span class="badge-pass">SUCCESS</span></td></tr>
                             <tr><td><b>Branch</b></td><td>${env.BRANCH}</td></tr>
                             <tr><td><b>Build URL</b></td><td><a href="${jobBuildUrl}">${jobBuildUrl}</a></td></tr>
                             <tr><td><b>Application</b></td><td><a href="${appUrl}">${appUrl}</a></td></tr>
                             <tr><td><b>SonarQube</b></td><td><a href="${sonarUrl}">View Dashboard</a></td></tr>
                         </table>
 
-                        <br>
-
                         <h3>Pipeline Summary</h3>
 
-                        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
-                        <tr style="background-color: #f2f2f2;">
-                            <th>Stage</th>
-                            <th>Status</th>
-                        </tr>
-                        <tr><td>Checkout Source Code</td><td>✅ Passed</td></tr>
-                        <tr><td>Build & Code Syntax Validation</td><td>✅ Passed</td></tr>
-                        <tr><td>SonarQube SAST Scan</td><td>✅ Passed</td></tr>
-                        <tr><td>SonarQube Quality Gate Check</td><td>✅ Passed</td></tr>
-                        <tr><td>Trivy Filesystem Scan</td><td>✅ Passed</td></tr>
-                        <tr><td>Docker Multi-Stage Image Build</td><td>✅ Passed</td></tr>
-                        <tr><td>Trivy Container Image Scan</td><td>✅ Passed</td></tr>
-                        <tr><td>AWS ECR Keyless Login & Push</td><td>✅ Passed</td></tr>
-                        <tr><td>Docker Swarm Cluster Deployment</td><td>✅ Passed</td></tr>
-                        <tr><td>Application Health Check Probe</td><td>✅ Passed</td></tr>
-                        <tr><td>OWASP ZAP DAST Scan</td><td>✅ Passed</td></tr>
-                        <tr><td>Consolidate Security Reports</td><td>✅ Passed</td></tr>
+                        <table>
+                            <tr>
+                                <th>Stage</th>
+                                <th>Status</th>
+                            </tr>
+                            <tr><td>Checkout Source Code</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Build & Code Syntax Validation</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>SonarQube SAST Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>SonarQube Quality Gate Check</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Trivy Filesystem Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Docker Multi-Stage Image Build</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Trivy Container Image Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>AWS ECR Keyless Login & Push</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Docker Swarm Cluster Deployment</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Application Health Check Probe</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>OWASP ZAP DAST Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Consolidate Security Reports</td><td><span class="badge-pass">✅ Passed</span></td></tr>
                         </table>
-
-                        <br>
 
                         <h3>Attached Reports</h3>
 
                         <ul>
-                        <li>📄 Trivy Image Scan Report</li>
-                        <li>📄 OWASP ZAP HTML Report</li>
-                        <li>📄 DevSecOps Executive Summary</li>
+                            <li>📄 Trivy Image Scan Report</li>
+                            <li>📄 OWASP ZAP HTML Report</li>
+                            <li>📄 DevSecOps Executive Summary</li>
                         </ul>
 
-                        <br>
+                        <p>The application was successfully built, scanned, deployed and verified.</p>
 
-                        <p>
-                        The application was successfully built, scanned, deployed and verified.
-                        </p>
-
-                        <br>
-
-                        Regards,<br>
-                        <b>SecDO DevSecOps Pipeline</b>
+                        <p>Regards,<br>
+                        <b>SecDO DevSecOps Pipeline</b></p>
 
                         </body>
                         </html>
@@ -439,11 +393,49 @@ SecDO DevSecOps Pipeline
                 def jobBuildUrl = "${env.JENKINS_JOB_URL}/${BUILD_NUMBER}/"
 
                 try {
-                    mail to: 'patilrahulprafulla1@gmail.com',
-                         subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: "SecDO Pipeline Failed at Stage: ${env.FAILED_STAGE}.\nBuild URL: ${jobBuildUrl}"
+                    emailext(
+                        subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
+                        mimeType: 'text/html',
+                        body: """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+                        </head>
+                        <body>
+
+                        <h2 style="color:red;">❌ SecDO Pipeline Failed</h2>
+
+                        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                            <tr style="background-color: #f2f2f2;">
+                                <th>Field</th>
+                                <th>Value</th>
+                            </tr>
+                            <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
+                            <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
+                            <tr><td><b>Status</b></td><td><font color="red"><b>FAILED</b></font></td></tr>
+                            <tr><td><b>Failed Stage</b></td><td>${env.FAILED_STAGE}</td></tr>
+                            <tr><td><b>Build URL</b></td><td><a href="${jobBuildUrl}">${jobBuildUrl}</a></td></tr>
+                        </table>
+
+                        <br>
+
+                        <p>Please review the attached reports and Jenkins console log.</p>
+
+                        <br>
+
+                        Regards,<br>
+                        <b>SecDO DevSecOps Pipeline</b>
+
+                        </body>
+                        </html>
+                        """,
+                        attachmentsPattern: 'reports/*',
+                        recipientProviders: [],
+                        to: 'patilrahulprafulla1@gmail.com'
+                    )
                 } catch (Exception e) {
-                    echo "Failure Mail Note: ${e.getMessage()}"
+                    echo "Failure Email Note: ${e.getMessage()}"
                 }
             }
         }
