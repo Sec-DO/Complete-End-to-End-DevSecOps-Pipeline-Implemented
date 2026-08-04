@@ -27,25 +27,25 @@ variable "ami_id" {
 variable "bastion_instance_type" {
   description = "Instance size for Public Bastion SSH Jump Host (Free-Tier eligible)"
   type        = string
-  default     = "t3.micro" # 1 vCPU, 1 GiB RAM
+  default     = "t3.micro"
 }
 
 variable "jenkins_instance_type" {
-  description = "Instance size for Jenkins CI/CD & SonarQube SAST Server (Minimum 4GB RAM required for SonarQube)"
+  description = "Instance size for Jenkins CI/CD & SonarQube SAST Server"
   type        = string
-  default     = "t3.medium" # 2 vCPU, 4 GiB RAM
+  default     = "t3.medium"
 }
 
 variable "app_instance_type" {
-  description = "Instance size for Application Docker Swarm & Monitoring Server (Prometheus + Grafana)"
+  description = "Instance size for Application Docker Swarm & Monitoring Server"
   type        = string
-  default     = "t3.small" # 2 vCPU, 2 GiB RAM
+  default     = "t3.small"
 }
 
 variable "ecr_repo_name" {
   description = "AWS ECR repository name"
   type        = string
-  default     = "secdo-app-repo"
+  default     = "secdo-ecr"
 }
 
 variable "ssh_key_name" {
