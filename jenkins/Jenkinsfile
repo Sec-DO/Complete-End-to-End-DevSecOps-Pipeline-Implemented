@@ -14,7 +14,7 @@ pipeline {
         IMAGE_TAG_BUILD      = "${BUILD_NUMBER}"
         IMAGE_TAG_COMMIT     = ""
         IMAGE_TAG_LATEST     = "latest"
-        APP_SERVER_IP        = "${env.APP_SERVER_IP ?: '10.0.20.145'}" // Deployed Private IP
+        APP_SERVER_IP        = "${env.APP_SERVER_IP ?: '10.0.20.60'}" // Deployed Private IP
         ALB_DNS_NAME         = "${env.ALB_DNS_NAME ?: 'secdo-alb-124066993.ap-south-1.elb.amazonaws.com'}" // Deployed ALB DNS Name
         SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
         DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}"
