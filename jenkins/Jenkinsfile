@@ -17,7 +17,8 @@ pipeline {
         APP_SERVER_IP        = "${env.APP_SERVER_IP ?: '10.0.20.60'}" // Deployed Private IP
         ALB_DNS_NAME         = "secdo-alb-124066993.ap-south-1.elb.amazonaws.com" // Deployed ALB DNS Name
         SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
-        EMAIL_TO             = "patilrahulprafulla1@gmail.com"
+        EMAIL_FROM           = "patilrahulprafulla@gmail.com"
+        EMAIL_TO             = "patilrahulprafulla1@gmail.com, dangerushi19@gmail.com, ameybhalerao004@gmail.com, ashutoshkabade1961@gmail.com"
         TARGET_URL           = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com"
         JENKINS_JOB_URL      = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080/job/SecDO-Pipeline"
         BRANCH               = "main"
@@ -304,6 +305,8 @@ EOF
 
                 try {
                     emailext(
+                        from: "${env.EMAIL_FROM}",
+                        to: "${env.EMAIL_TO}",
                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
                         mimeType: 'text/html',
                         body: """
@@ -376,8 +379,7 @@ EOF
                         </body>
                         </html>
                         """,
-                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
-                        to: 'patilrahulprafulla1@gmail.com'
+                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html'
                     )
                 } catch (Exception e) {
                     echo "Extended Email Note: ${e.getMessage()}"
@@ -391,6 +393,8 @@ EOF
 
                 try {
                     emailext(
+                        from: "${env.EMAIL_FROM}",
+                        to: "${env.EMAIL_TO}",
                         subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
                         mimeType: 'text/html',
                         body: """
@@ -427,8 +431,7 @@ EOF
                         </body>
                         </html>
                         """,
-                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
-                        to: 'patilrahulprafulla1@gmail.com'
+                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html'
                     )
                 } catch (Exception e) {
                     echo "Failure Email Note: ${e.getMessage()}"
