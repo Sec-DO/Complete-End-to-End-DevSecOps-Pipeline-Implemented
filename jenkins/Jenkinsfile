@@ -164,18 +164,29 @@ pipeline {
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
                     ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-                    ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
+                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
+                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem"
+                    fi
+
+                    $SSH_CMD ubuntu@${APP_SERVER_IP} "
                         aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
                         docker pull ${ECR_URI}:latest && \
                         docker swarm init 2>/dev/null || true && \
                         mkdir -p ~/secdo-swarm
                     " || true
-                    scp -o StrictHostKeyChecking=no deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
-                    ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
+
+                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
+                        scp -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
+                    else
+                        scp -o StrictHostKeyChecking=no deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
+                    fi
+
+                    $SSH_CMD ubuntu@${APP_SERVER_IP} "
                         export ECR_REPO_URI=${ECR_URI}
                         export IMAGE_TAG=latest
                         cd ~/secdo-swarm && \
-                        docker stack deploy -c docker-swarm.yml secdo_app --with-registry-auth
+                        docker stack deploy -c docker-swarm.yml secdo_app --with-registry-auth 2>/dev/null || docker compose -f docker-swarm.yml up -d
                     " || true
                 '''
             }
@@ -186,7 +197,12 @@ pipeline {
                 script { env.FAILED_STAGE = '10. Application Health Check Probe' }
                 echo '=== STAGE 10: Polling Swarm Service Readiness Probe ==='
                 sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
+                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
+                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem"
+                    fi
+
+                    $SSH_CMD ubuntu@${APP_SERVER_IP} "
                         for i in {1..15}; do
                             STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost/health.php || echo '000')
                             if [ \"\$STATUS\" -eq 200 ]; then
@@ -209,6 +225,7 @@ pipeline {
                 echo '=== STAGE 11: Executing OWASP ZAP Dynamic Application Security Testing (DAST) ==='
                 sh '''
                     echo "Launching Containerized OWASP ZAP Baseline DAST Scan against http://${APP_SERVER_IP}/..."
+                    chmod 777 reports || true
                     docker run --rm \
                       -v $(pwd)/reports:/zap/wrk/:rw \
                       ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
