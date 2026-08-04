@@ -1,4 +1,4 @@
-# Main Terraform Infrastructure Provisioning File (Mumbai ap-south-1 Region)
+# SecDO Main Terraform Infrastructure Definition
 
 terraform {
   required_version = ">= 1.5.0"
@@ -12,12 +12,19 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
 }
 
-# Dynamic Canonical Ubuntu 24.04 LTS AMI Lookup for ap-south-1
+# Dynamic Canonical Ubuntu 24.04 LTS AMI Lookup
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical
+  owners      = ["099720109477"] # Canonical AWS Account ID
 
   filter {
     name   = "name"
@@ -30,7 +37,7 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# 1. AWS ECR Repository Creation
+# 1. AWS Private ECR Repository Definition
 resource "aws_ecr_repository" "secdo_ecr" {
   name                 = var.ecr_repo_name
   image_tag_mutability = "MUTABLE"
@@ -38,19 +45,9 @@ resource "aws_ecr_repository" "secdo_ecr" {
   image_scanning_configuration {
     scan_on_push = true
   }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-
-  tags = {
-    Name        = var.ecr_repo_name
-    Environment = var.environment
-    Project     = var.project_name
-  }
 }
 
-# ECR Lifecycle Policy (Retain last 10 images)
+# Lifecycle Policy to keep the last 10 images
 resource "aws_ecr_lifecycle_policy" "secdo_ecr_policy" {
   repository = aws_ecr_repository.secdo_ecr.name
 
@@ -58,12 +55,12 @@ resource "aws_ecr_lifecycle_policy" "secdo_ecr_policy" {
     rules = [
       {
         rulePriority = 1
-        description  = "Retain last 10 tagged container images"
+        description  = "Keep last 10 container images"
         selection = {
-          tagStatus     = "any"
-          countType     = "sinceImagePushed"
-          countUnit     = "days"
-          countNumber   = 30
+          tagStatus   = "any"
+          countType   = "countSinceImagePushed"
+          countUnit   = "days"
+          countNumber = 30
         }
         action = {
           type = "expire"
@@ -73,55 +70,52 @@ resource "aws_ecr_lifecycle_policy" "secdo_ecr_policy" {
   })
 }
 
-# 2. Jenkins CI/CD EC2 Instance (Placed in Private Subnet 1a - Mumbai Region)
+# 2. Private Subnet EC2: Jenkins & SonarQube Server
 resource "aws_instance" "jenkins_server" {
-  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
+  ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.jenkins_instance_type
-  key_name                    = var.ssh_key_name
   subnet_id                   = aws_subnet.private_subnet_1.id
+  key_name                    = var.ssh_key_name
   vpc_security_group_ids      = [aws_security_group.jenkins_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.jenkins_instance_profile.name
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_profile.name
   associate_public_ip_address = false
+
+  user_data = file("${path.module}/../scripts/setup-jenkins-server.sh")
 
   root_block_device {
     volume_size           = 30
     volume_type           = "gp3"
+    encrypted             = true
     delete_on_termination = true
   }
 
-  user_data = file("${path.module}/../scripts/setup-jenkins-server.sh")
-
   tags = {
-    Name        = "${var.project_name}-jenkins-server"
-    Role        = "CI/CD & SAST Engine"
-    Subnet      = "Private Subnet 1a"
-    Region      = var.aws_region
-    Environment = var.environment
+    Name = "${var.project_name}-jenkins-server"
+    Role = "Jenkins-CI-CD-SonarQube"
   }
 }
 
-# 3. Application Deployment EC2 Instance (Placed in Private Subnet 1b - Mumbai Region)
+# 3. Private Subnet EC2: Application & Observability Server
 resource "aws_instance" "app_server" {
-  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
+  ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.app_instance_type
-  key_name                    = var.ssh_key_name
   subnet_id                   = aws_subnet.private_subnet_2.id
+  key_name                    = var.ssh_key_name
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_profile.name
   associate_public_ip_address = false
-
-  root_block_device {
-    volume_size           = 20
-    volume_type           = "gp3"
-    delete_on_termination = true
-  }
 
   user_data = file("${path.module}/../scripts/setup-app-server.sh")
 
+  root_block_device {
+    volume_size           = 30
+    volume_type           = "gp3"
+    encrypted             = true
+    delete_on_termination = true
+  }
+
   tags = {
-    Name        = "${var.project_name}-app-server"
-    Role        = "Production Application Host"
-    Subnet      = "Private Subnet 1b"
-    Region      = var.aws_region
-    Environment = var.environment
+    Name = "${var.project_name}-app-server"
+    Role = "Application-Swarm-Monitoring"
   }
 }
