@@ -7,17 +7,17 @@ pipeline {
     }
 
     environment {
-        AWS_REGION         = 'ap-south-1'
-        ECR_REPO_NAME      = 'secdo-ecr' // Matches 325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr
-        AWS_ACCOUNT_ID     = '' // Populated dynamically via keyless aws sts get-caller-identity
+        AWS_REGION         = "${env.AWS_REGION ?: 'ap-south-1'}"
+        ECR_REPO_NAME      = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
+        AWS_ACCOUNT_ID     = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
         ECR_REPO_URI       = ''
         IMAGE_TAG_BUILD    = "${BUILD_NUMBER}"
         IMAGE_TAG_COMMIT   = ""
         IMAGE_TAG_LATEST   = "latest"
-        APP_SERVER_IP      = "10.0.2.100" // Set to Application EC2 Private IP
-        SONAR_SERVER_NAME  = 'SonarQube'  
-        SSH_CREDENTIAL_ID  = 'SecDO.pem'
-        DEVOPS_TEAM_EMAIL  = 'devops-team@secdo.internal'
+        APP_SERVER_IP      = "${env.APP_SERVER_IP}" // Set via Jenkins Environment Variables
+        SONAR_SERVER_NAME  = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
+        SSH_CREDENTIAL_ID  = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
+        DEVOPS_TEAM_EMAIL  = "${env.DEVOPS_TEAM_EMAIL}" // Set via Jenkins Environment Variables
     }
 
     options {
@@ -126,7 +126,7 @@ pipeline {
             }
         }
 
-        stage('8. AWS ECR Keyless Login & Push (secdo-ecr)') {
+        stage('8. AWS ECR Keyless Login & Push') {
             steps {
                 echo '=== STAGE 8: Authenticating and Pushing Container Image to Private AWS ECR ==='
                 sh '''
@@ -223,7 +223,7 @@ pipeline {
                     </head>
                     <body>
                         <div class="container">
-                            <h2>SecDO DevSecOps Security Compliance Report (secdo-ecr)</h2>
+                            <h2>SecDO DevSecOps Security Compliance Report</h2>
                             <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
                             <p><strong>Git Commit:</strong> ${IMAGE_TAG_COMMIT}</p>
                             <p><strong>Deployment Status:</strong> <span class="badge pass">SUCCESS (Docker Swarm Live)</span></p>
@@ -249,28 +249,32 @@ EOF
         always {
             echo '=== STAGE 13: Dispatching DevSecOps Security Compliance Email Report ==='
             script {
-                try {
-                    emailext (
-                        subject: "SecDO DevSecOps Pipeline Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
-                        body: """
-                            <h2>SecDO CI/CD Security Compliance Report (secdo-ecr)</h2>
-                            <p>Hello DevOps Team,</p>
-                            <p>The automated DevSecOps pipeline execution for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
-                            <ul>
-                                <li><b>Git Commit:</b> ${env.IMAGE_TAG_COMMIT}</li>
-                                <li><b>ECR Image Tag:</b> ${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</li>
-                                <li><b>Target Server:</b> Docker Swarm Cluster (${env.APP_SERVER_IP})</li>
-                            </ul>
-                            <p>Attached are the complete SonarQube SAST, Trivy Vulnerability, and OWASP ZAP DAST security audit reports.</p>
-                            <br/>
-                            <p><i>SecDO Automated Pipeline Engine (Mumbai)</i></p>
-                        """,
-                        mimeType: 'text/html',
-                        to: "${env.DEVOPS_TEAM_EMAIL}",
-                        attachmentsPattern: 'reports/*.html'
-                    )
-                } catch (Exception e) {
-                    echo "Email notification notice: Configure Jenkins Mailer/Email Extension plugin settings if email relay is enabled."
+                if (env.DEVOPS_TEAM_EMAIL) {
+                    try {
+                        emailext (
+                            subject: "SecDO DevSecOps Pipeline Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
+                            body: """
+                                <h2>SecDO CI/CD Security Compliance Report</h2>
+                                <p>Hello DevOps Team,</p>
+                                <p>The automated DevSecOps pipeline execution for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
+                                <ul>
+                                    <li><b>Git Commit:</b> ${env.IMAGE_TAG_COMMIT}</li>
+                                    <li><b>ECR Image Tag:</b> ${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</li>
+                                    <li><b>Target Server:</b> Docker Swarm Cluster (${env.APP_SERVER_IP})</li>
+                                </ul>
+                                <p>Attached are the complete SonarQube SAST, Trivy Vulnerability, and OWASP ZAP DAST security audit reports.</p>
+                                <br/>
+                                <p><i>SecDO Automated Pipeline Engine</i></p>
+                            """,
+                            mimeType: 'text/html',
+                            to: "${env.DEVOPS_TEAM_EMAIL}",
+                            attachmentsPattern: 'reports/*.html'
+                        )
+                    } catch (Exception e) {
+                        echo "Email notification notice: Configure Jenkins Mailer/Email Extension plugin settings if email relay is enabled."
+                    }
+                } else {
+                    echo "Notice: DEVOPS_TEAM_EMAIL environment variable not configured. Skipping email dispatch."
                 }
             }
             cleanWs()

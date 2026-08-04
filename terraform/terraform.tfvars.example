@@ -1,0 +1,11 @@
+# Example Terraform Configuration Values Template
+# Copy this file to terraform.tfvars or pass values via TF_VAR_* environment variables.
+
+aws_region            = "ap-south-1"
+environment           = "production"
+project_name          = "secdo"
+bastion_instance_type = "t3.micro"
+jenkins_instance_type = "m7i-flex.large"
+app_instance_type     = "m7i-flex.large"
+ecr_repo_name         = "secdo-ecr"
+ssh_key_name          = "SecDO"
