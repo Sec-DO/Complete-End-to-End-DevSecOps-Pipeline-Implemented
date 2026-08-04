@@ -318,6 +318,10 @@ EOF
                         <h2 style="color:green;">✅ SecDO Pipeline Completed Successfully</h2>
 
                         <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                            <tr style="background-color: #f2f2f2;">
+                                <th>Field</th>
+                                <th>Value</th>
+                            </tr>
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="green"><b>SUCCESS</b></font></td></tr>
@@ -402,6 +406,10 @@ EOF
                         <h2 style="color:red;">❌ SecDO Pipeline Failed</h2>
 
                         <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                            <tr style="background-color: #f2f2f2;">
+                                <th>Field</th>
+                                <th>Value</th>
+                            </tr>
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="red"><b>FAILED</b></font></td></tr>
