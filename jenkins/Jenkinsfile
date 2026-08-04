@@ -377,6 +377,7 @@ EOF
                         </html>
                         """,
                         attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
+                        recipientProviders: [developers(), requestor()],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
                 } catch (Exception e) {
@@ -428,6 +429,7 @@ EOF
                         </html>
                         """,
                         attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
+                        recipientProviders: [developers(), requestor()],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
                 } catch (Exception e) {
