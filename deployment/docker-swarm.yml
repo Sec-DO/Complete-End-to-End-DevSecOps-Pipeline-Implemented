@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  app:
+    image: ${ECR_REPO_URI}:${IMAGE_TAG}
+    ports:
+      - "80:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=secdo_db
+      - DB_USER=secdo_user
+      - DB_PASSWORD=${DB_PASSWORD:-secdo_password}
+      - APP_VERSION=${IMAGE_TAG}
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - secdo-swarm-net
+
+  db:
+    image: mariadb:11.2
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_secdo_secret}
+      - MYSQL_DATABASE=secdo_db
+      - MYSQL_USER=secdo_user
+      - MYSQL_PASSWORD=${DB_PASSWORD:-secdo_password}
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - swarm_db_data:/var/lib/mysql
+    networks:
+      - secdo-swarm-net
+
+networks:
+  secdo-swarm-net:
+    driver: overlay
+
+volumes:
+  swarm_db_data:
+    driver: local

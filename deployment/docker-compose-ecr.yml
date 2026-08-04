@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  app:
+    image: ${ECR_REPO_URI}:${IMAGE_TAG}
+    container_name: secdo-app-prod
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=secdo_db
+      - DB_USER=secdo_user
+      - DB_PASSWORD=${DB_PASSWORD:-secdo_password}
+      - APP_VERSION=${IMAGE_TAG}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - secdo-prod-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  db:
+    image: mariadb:11.2
+    container_name: secdo-db-prod
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_secdo_secret}
+      - MYSQL_DATABASE=secdo_db
+      - MYSQL_USER=secdo_user
+      - MYSQL_PASSWORD=${DB_PASSWORD:-secdo_password}
+    volumes:
+      - mariadb_prod_data:/var/lib/mysql
+    networks:
+      - secdo-prod-network
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "secdo_user", "--password=${DB_PASSWORD:-secdo_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  secdo-prod-network:
+    driver: bridge
+
+volumes:
+  mariadb_prod_data:
+    driver: local

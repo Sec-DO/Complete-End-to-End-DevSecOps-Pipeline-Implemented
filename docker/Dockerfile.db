@@ -1,0 +1,14 @@
+# SecDO Hardened MariaDB Container Image
+FROM mariadb:11.2
+
+LABEL maintainer="SecDO DevSecOps Team <devsecops@secdo.internal>"
+LABEL description="Hardened MariaDB Database Container"
+
+# Copy Initialization SQL Script
+COPY docker/init.sql /docker-entrypoint-initdb.d/init.sql
+
+# Health Check Probe for MariaDB Readiness
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+    CMD mariadb-admin ping -h 127.0.0.1 -u $MYSQL_USER --password=$MYSQL_PASSWORD || exit 1
+
+EXPOSE 3306

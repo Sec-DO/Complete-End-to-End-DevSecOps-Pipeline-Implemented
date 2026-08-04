@@ -1,0 +1,42 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Environment & Secrets
+.env
+*.pem
+*.key
+*.crt
+
+# IDE & Editor Configs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build Logs & Directories
+*.log
+logs/
+dist/
+build/
+target/
+
+# Dependency Directories
+vendor/
+node_modules/
+
+# Docker Temporary Files
+.docker/
+*.tar
+
+# SonarQube Scanner Artifacts
+.scannerwork/
+.sonar/
+
+# Prometheus Data Directory
+monitoring/prometheus/data/
+monitoring/grafana/data/
