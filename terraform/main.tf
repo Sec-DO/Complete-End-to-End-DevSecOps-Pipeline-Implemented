@@ -59,7 +59,6 @@ resource "aws_ecr_lifecycle_policy" "secdo_ecr_policy" {
         selection = {
           tagStatus   = "any"
           countType   = "countSinceImagePushed"
-          countUnit   = "days"
           countNumber = 30
         }
         action = {
@@ -77,7 +76,7 @@ resource "aws_instance" "jenkins_server" {
   subnet_id                   = aws_subnet.private_subnet_1.id
   key_name                    = var.ssh_key_name
   vpc_security_group_ids      = [aws_security_group.jenkins_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.jenkins_profile.name
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_instance_profile.name
   associate_public_ip_address = false
 
   user_data = file("${path.module}/../scripts/setup-jenkins-server.sh")
@@ -102,7 +101,7 @@ resource "aws_instance" "app_server" {
   subnet_id                   = aws_subnet.private_subnet_2.id
   key_name                    = var.ssh_key_name
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.jenkins_profile.name
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_instance_profile.name
   associate_public_ip_address = false
 
   user_data = file("${path.module}/../scripts/setup-app-server.sh")
