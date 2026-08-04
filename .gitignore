@@ -18,6 +18,14 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Terraform State & Local Artifacts
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars.json
+.terraform.lock.hcl
+tfplan
+
 # Build Logs & Directories
 *.log
 logs/
@@ -37,6 +45,6 @@ node_modules/
 .scannerwork/
 .sonar/
 
-# Prometheus Data Directory
+# Prometheus & Grafana Data Directories
 monitoring/prometheus/data/
 monitoring/grafana/data/
