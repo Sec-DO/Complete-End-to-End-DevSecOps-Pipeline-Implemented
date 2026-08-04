@@ -304,29 +304,20 @@ EOF
                 def sonarUrl = "http://${env.ALB_DNS_NAME}:9000"
 
                 try {
-                    mail to: "${env.EMAIL_TO}",
-                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: """SecDO Pipeline Completed Successfully
-
-Project: ${JOB_NAME}
-Build Number: #${BUILD_NUMBER}
-Status: SUCCESS
-Branch: ${env.BRANCH}
-Build URL: ${jobBuildUrl}
-Application: ${appUrl}
-SonarQube: ${sonarUrl}
-"""
-
                     emailext(
                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
                         mimeType: 'text/html',
                         body: """
+                        <!DOCTYPE html>
                         <html>
+                        <head>
+                            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+                        </head>
                         <body>
 
                         <h2 style="color:green;">✅ SecDO Pipeline Completed Successfully</h2>
 
-                        <table border="1" cellpadding="6" cellspacing="0">
+                        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="green"><b>SUCCESS</b></font></td></tr>
@@ -340,8 +331,8 @@ SonarQube: ${sonarUrl}
 
                         <h3>Pipeline Summary</h3>
 
-                        <table border="1" cellpadding="5" cellspacing="0">
-                        <tr>
+                        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
+                        <tr style="background-color: #f2f2f2;">
                             <th>Stage</th>
                             <th>Status</th>
                         </tr>
@@ -397,20 +388,20 @@ SonarQube: ${sonarUrl}
                 def jobBuildUrl = "${env.JENKINS_JOB_URL}/${BUILD_NUMBER}/"
 
                 try {
-                    mail to: "${env.EMAIL_TO}",
-                         subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: "SecDO Pipeline Failed at Stage: ${env.FAILED_STAGE}.\nBuild URL: ${jobBuildUrl}"
-
                     emailext(
                         subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
                         mimeType: 'text/html',
                         body: """
+                        <!DOCTYPE html>
                         <html>
+                        <head>
+                            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+                        </head>
                         <body>
 
                         <h2 style="color:red;">❌ SecDO Pipeline Failed</h2>
 
-                        <table border="1" cellpadding="6" cellspacing="0">
+                        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="red"><b>FAILED</b></font></td></tr>
