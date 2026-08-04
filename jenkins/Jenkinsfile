@@ -303,25 +303,52 @@ EOF
                 def appUrl = "${env.TARGET_URL}"
                 def sonarUrl = "http://${env.ALB_DNS_NAME}:9000"
 
-                // 1. Built-in Standard Mail Step (Always Delivers)
+                // 1. Built-in Standard Mailer Step (Delivers HTML & Plain Text)
                 try {
                     mail to: 'patilrahulprafulla1@gmail.com',
                          subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: """SecDO Pipeline Completed Successfully!
+                         body: """✅ SecDO Pipeline Completed Successfully
 
-Project: ${JOB_NAME}
-Build Number: #${BUILD_NUMBER}
-Status: SUCCESS
-Branch: ${env.BRANCH}
-Build URL: ${jobBuildUrl}
-Application: ${appUrl}
-SonarQube: ${sonarUrl}
+Field       Value
+---------------------------------------------------------------------
+Project:    ${JOB_NAME}
+Build #:    #${BUILD_NUMBER}
+Status:     SUCCESS
+Branch:     ${env.BRANCH}
+Build URL:  ${jobBuildUrl}
+App URL:    ${appUrl}
+SonarQube:  ${sonarUrl}
+
+Pipeline Summary
+---------------------------------------------------------------------
+1. Checkout Source Code:             ✅ Passed
+2. Build & Code Syntax Validation:   ✅ Passed
+3. SonarQube SAST Scan:              ✅ Passed
+4. SonarQube Quality Gate Check:     ✅ Passed
+5. Trivy Filesystem Scan:            ✅ Passed
+6. Docker Multi-Stage Image Build:   ✅ Passed
+7. Trivy Container Image Scan:       ✅ Passed
+8. AWS ECR Keyless Login & Push:     ✅ Passed
+9. Docker Swarm Cluster Deployment:  ✅ Passed
+10. Application Health Check Probe:  ✅ Passed
+11. OWASP ZAP DAST Scan:             ✅ Passed
+12. Consolidate Security Reports:    ✅ Passed
+
+Attached Reports:
+- Trivy Image Scan Report
+- OWASP ZAP HTML Report
+- DevSecOps Executive Summary
+
+The application was successfully built, scanned, deployed and verified.
+
+Regards,
+SecDO DevSecOps Pipeline
 """
                 } catch (Exception e) {
                     echo "Standard Mail Step Note: ${e.getMessage()}"
                 }
 
-                // 2. Extended Email Step with Recipient Providers Fix
+                // 2. Extended Email Step with empty recipientProviders list
                 try {
                     emailext(
                         subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
@@ -398,7 +425,7 @@ SonarQube: ${sonarUrl}
                         </html>
                         """,
                         attachmentsPattern: 'reports/*',
-                        recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+                        recipientProviders: [],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
                 } catch (Exception e) {
