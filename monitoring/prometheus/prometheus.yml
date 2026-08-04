@@ -1,22 +1,31 @@
-# Prometheus Global Telemetry Scrape Configuration
+# Prometheus Telemetry Configuration (Monitoring BOTH Jenkins & Application Servers)
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
 scrape_configs:
+  # 1. Prometheus Self-Monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'node_exporter'
+  # 2. Application Server Host Metrics (Node Exporter)
+  - job_name: 'app_node_exporter'
     static_configs:
       - targets: ['node-exporter:9100']
 
-  - job_name: 'cadvisor'
+  # 3. Application Server Container Telemetry (cAdvisor)
+  - job_name: 'app_cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
 
-  - job_name: 'secdo_app'
+  # 4. Jenkins & SonarQube Server Host Metrics (Node Exporter)
+  - job_name: 'jenkins_node_exporter'
+    static_configs:
+      - targets: ['10.0.10.100:9100'] # Jenkins Server Private IP / Hostname
+
+  # 5. Production Web Application Health Status
+  - job_name: 'secdo_production_app'
     metrics_path: '/health.php'
     scrape_interval: 10s
     static_configs:
