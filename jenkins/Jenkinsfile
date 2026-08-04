@@ -19,6 +19,7 @@ pipeline {
         SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
         SSH_CREDENTIAL_ID    = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
         DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}"
+        FAILED_STAGE         = "Unknown Stage"
     }
 
     options {
@@ -30,6 +31,7 @@ pipeline {
     stages {
         stage('1. Checkout Source Code') {
             steps {
+                script { env.FAILED_STAGE = '1. Checkout Source Code' }
                 echo '=== STAGE 1: Automated GitHub Checkout ==='
                 checkout scm
                 script {
@@ -42,6 +44,7 @@ pipeline {
 
         stage('2. Build & Code Syntax Validation') {
             steps {
+                script { env.FAILED_STAGE = '2. Build & Code Syntax Validation' }
                 echo '=== STAGE 2: Validating Code Base Syntax ==='
                 sh '''
                     php -l backend/src/index.php
@@ -53,6 +56,7 @@ pipeline {
 
         stage('3. SonarQube SAST Scan') {
             steps {
+                script { env.FAILED_STAGE = '3. SonarQube SAST Scan' }
                 echo '=== STAGE 3: Running SonarQube Static Application Security Scan ==='
                 withSonarQubeEnv("${env.SONAR_SERVER_NAME}") {
                     sh '''
@@ -67,6 +71,7 @@ pipeline {
 
         stage('4. SonarQube Quality Gate Check') {
             steps {
+                script { env.FAILED_STAGE = '4. SonarQube Quality Gate Check' }
                 echo '=== STAGE 4: Evaluating SonarQube Quality Gate ==='
                 timeout(time: 5, unit: 'MINUTES') {
                     script {
@@ -78,6 +83,7 @@ pipeline {
 
         stage('5. Trivy Filesystem Scan') {
             steps {
+                script { env.FAILED_STAGE = '5. Trivy Filesystem Scan' }
                 echo '=== STAGE 5: Trivy Filesystem Security Audit ==='
                 sh '''
                     trivy fs \
@@ -94,6 +100,7 @@ pipeline {
 
         stage('6. Docker Multi-Stage Image Build') {
             steps {
+                script { env.FAILED_STAGE = '6. Docker Multi-Stage Image Build' }
                 echo '=== STAGE 6: Building Production Multi-Stage Docker Image ==='
                 script {
                     // Keyless IAM STS Authentication
@@ -113,6 +120,7 @@ pipeline {
 
         stage('7. Trivy Container Image Scan') {
             steps {
+                script { env.FAILED_STAGE = '7. Trivy Container Image Scan' }
                 echo '=== STAGE 7: Trivy Container Image Security Vulnerability Scan ==='
                 sh '''
                     trivy image \
@@ -129,6 +137,7 @@ pipeline {
 
         stage('8. AWS ECR Keyless Login & Push') {
             steps {
+                script { env.FAILED_STAGE = '8. AWS ECR Keyless Login & Push' }
                 echo '=== STAGE 8: Authenticating and Pushing Container Image to Private AWS ECR ==='
                 sh '''
                     aws ecr get-login-password --region ${AWS_REGION} | \
@@ -143,6 +152,7 @@ pipeline {
 
         stage('9. Docker Swarm Cluster Deployment') {
             steps {
+                script { env.FAILED_STAGE = '9. Docker Swarm Cluster Deployment' }
                 echo '=== STAGE 9: Deploying to Production Application Server via Docker Swarm ==='
                 sshagent([env.SSH_CREDENTIAL_ID]) {
                     sh '''
@@ -166,6 +176,7 @@ pipeline {
 
         stage('10. Application Health Check Probe') {
             steps {
+                script { env.FAILED_STAGE = '10. Application Health Check Probe' }
                 echo '=== STAGE 10: Polling Swarm Service Readiness Probe ==='
                 sshagent([env.SSH_CREDENTIAL_ID]) {
                     sh '''
@@ -189,6 +200,7 @@ pipeline {
 
         stage('11. OWASP ZAP DAST Scan') {
             steps {
+                script { env.FAILED_STAGE = '11. OWASP ZAP DAST Scan' }
                 echo '=== STAGE 11: Executing OWASP ZAP Dynamic Application Security Testing (DAST) ==='
                 sh '''
                     echo "Launching Containerized OWASP ZAP Baseline DAST Scan against http://${APP_SERVER_IP}/..."
@@ -203,6 +215,7 @@ pipeline {
 
         stage('12. Consolidate DevSecOps Compliance Reports') {
             steps {
+                script { env.FAILED_STAGE = '12. Consolidate DevSecOps Compliance Reports' }
                 echo '=== STAGE 12: Aggregating SAST, Supply Chain, and DAST Security Reports ==='
                 sh '''
                     cat << 'EOF' > reports/devsecops-summary.html
@@ -247,17 +260,17 @@ EOF
     }
 
     post {
-        always {
-            echo '=== STAGE 13: Dispatching Security Compliance Reports & Service URLs to DevSecOps Team ==='
+        success {
+            echo '=== PIPELINE COMPLETED SUCCESSFULLY: Sending DevSecOps Compliance Reports ==='
             script {
                 if (env.DEVSECOPS_TEAM_EMAIL) {
                     try {
                         emailext (
-                            subject: "SECURITY AUDIT: SecDO DevSecOps Compliance Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
+                            subject: "SUCCESS: SecDO DevSecOps Pipeline Audit - Build #${BUILD_NUMBER}",
                             body: """
-                                <h2>SecDO DevSecOps Security Audit Compliance Report</h2>
+                                <h2>SecDO DevSecOps Pipeline Execution - SUCCESS</h2>
                                 <p>Dear DevSecOps Security Team,</p>
-                                <p>The automated security compliance pipeline run for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b style="color:green;">${currentBuild.currentResult}</b>.</p>
+                                <p>The automated security compliance pipeline run for <b>Build #${BUILD_NUMBER}</b> completed with status: <b style="color:green;">SUCCESS</b>.</p>
                                 
                                 <h3>📌 Live Service Access URLs:</h3>
                                 <ul>
@@ -267,13 +280,6 @@ EOF
                                     <li><b>SonarQube SAST Interface:</b> <a href="http://${env.ALB_DNS_NAME}:9000">http://${env.ALB_DNS_NAME}:9000</a></li>
                                     <li><b>Grafana Observability Dashboard:</b> <a href="http://${env.ALB_DNS_NAME}:3000">http://${env.ALB_DNS_NAME}:3000</a></li>
                                     <li><b>Prometheus Metrics Explorer:</b> <a href="http://${env.ALB_DNS_NAME}:9090">http://${env.ALB_DNS_NAME}:9090</a></li>
-                                </ul>
-
-                                <h3>📦 Build & Container Details:</h3>
-                                <ul>
-                                    <li><b>Git Commit SHA:</b> ${env.IMAGE_TAG_COMMIT}</li>
-                                    <li><b>ECR Private Image Tag:</b> <code>${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</code></li>
-                                    <li><b>Target Host:</b> Production Docker Swarm (${env.APP_SERVER_IP})</li>
                                 </ul>
 
                                 <h3>📎 Attached Security Audit Reports:</h3>
@@ -291,25 +297,62 @@ EOF
                             attachmentsPattern: 'reports/*.html'
                         )
                     } catch (Exception e) {
-                        echo "Email notification notice: Configure Jenkins Mailer/Email Extension plugin settings if email relay is enabled."
+                        echo "Email notification notice: Configure Mailer/Email Extension plugin settings if email relay is enabled."
                     }
-                } else {
-                    echo "Notice: DEVSECOPS_TEAM_EMAIL environment variable not configured. Skipping email report dispatch."
                 }
             }
-            cleanWs()
         }
 
         failure {
-            echo '=== AUTOMATED ROLLBACK: Rolling back Docker Swarm Service ==='
-            sshagent([env.SSH_CREDENTIAL_ID]) {
-                sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
-                        echo 'Rolling back Swarm stack to previous stable image...'
-                        cd ~/secdo-swarm && docker service update --image ${ECR_REPO_URI}:latest secdo_app_app
-                    "
-                '''
+            echo '=== ALERT: PIPELINE STAGE FAILURE DETECTED ==='
+            script {
+                // Execute Zero-Downtime Swarm Rollback
+                sshagent([env.SSH_CREDENTIAL_ID]) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
+                            echo 'Rolling back Swarm stack to previous stable image...'
+                            cd ~/secdo-swarm && docker service update --image ${ECR_REPO_URI}:latest secdo_app_app 2>/dev/null || true
+                        "
+                    '''
+                }
+
+                // Send Failure Email Notification detailing the EXACT FAILED STAGE
+                if (env.DEVSECOPS_TEAM_EMAIL) {
+                    try {
+                        emailext (
+                            subject: "CRITICAL ALERT: SecDO Pipeline Failed at ${env.FAILED_STAGE} - Build #${BUILD_NUMBER}",
+                            body: """
+                                <h2 style="color:red;">🚨 CRITICAL ALERT: DevSecOps Pipeline Failure</h2>
+                                <p>Dear DevSecOps Security Team,</p>
+                                <p>The automated pipeline build <b>#${BUILD_NUMBER}</b> failed during execution.</p>
+                                
+                                <div style="background:#fee2e2; border:1px solid #ef4444; padding:15px; border-radius:8px; margin:15px 0;">
+                                    <h3 style="color:#b91c1c; margin-top:0;">Failed Stage Details:</h3>
+                                    <p><b>Exact Failed Stage:</b> <span style="font-size:1.1em; color:#991b1b;"><b>${env.FAILED_STAGE}</b></span></p>
+                                    <p><b>Git Commit SHA:</b> ${env.IMAGE_TAG_COMMIT}</p>
+                                    <p><b>Target Server:</b> Docker Swarm (${env.APP_SERVER_IP})</p>
+                                    <p><b>Action Taken:</b> Automated Zero-Downtime Rollback Executed</p>
+                                </div>
+
+                                <h3>🔗 Troubleshooting Links:</h3>
+                                <ul>
+                                    <li><b>View Jenkins Build Console Log:</b> <a href="http://${env.ALB_DNS_NAME}:8080/job/SecDO-Pipeline/${BUILD_NUMBER}/console">http://${env.ALB_DNS_NAME}:8080/job/SecDO-Pipeline/${BUILD_NUMBER}/console</a></li>
+                                    <li><b>SonarQube SAST Dashboard:</b> <a href="http://${env.ALB_DNS_NAME}:9000">http://${env.ALB_DNS_NAME}:9000</a></li>
+                                    <li><b>Grafana Telemetry:</b> <a href="http://${env.ALB_DNS_NAME}:3000">http://${env.ALB_DNS_NAME}:3000</a></li>
+                                </ul>
+                                <br/>
+                                <p><i>SecDO Automated Pipeline Alert System</i></p>
+                            """,
+                            mimeType: 'text/html',
+                            to: "${env.DEVSECOPS_TEAM_EMAIL}",
+                            attachmentsPattern: 'reports/*.html'
+                        )
+                    } catch (Exception e) {
+                        echo "Email notification notice: Configure Mailer/Email Extension plugin settings if email relay is enabled."
+                    }
+                }
             }
+            cleanWs()
         }
     }
 }
