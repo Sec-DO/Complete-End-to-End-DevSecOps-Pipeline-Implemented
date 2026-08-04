@@ -301,7 +301,6 @@ EOF
             script {
                 def jobBuildUrl = "${env.JENKINS_JOB_URL}/${BUILD_NUMBER}/"
                 def appUrl = "${env.TARGET_URL}"
-                def sonarUrl = "http://${env.ALB_DNS_NAME}:9000"
 
                 try {
                     emailext(
@@ -338,7 +337,6 @@ EOF
                             <tr><td><b>Branch</b></td><td>${env.BRANCH}</td></tr>
                             <tr><td><b>Build URL</b></td><td><a href="${jobBuildUrl}">${jobBuildUrl}</a></td></tr>
                             <tr><td><b>Application</b></td><td><a href="${appUrl}">${appUrl}</a></td></tr>
-                            <tr><td><b>SonarQube</b></td><td><a href="${sonarUrl}">View Dashboard</a></td></tr>
                         </table>
 
                         <h3>Pipeline Summary</h3>
