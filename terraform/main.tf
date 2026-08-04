@@ -58,8 +58,8 @@ resource "aws_ecr_lifecycle_policy" "secdo_ecr_policy" {
         description  = "Keep last 10 container images"
         selection = {
           tagStatus   = "any"
-          countType   = "countSinceImagePushed"
-          countNumber = 30
+          countType   = "imageCountMoreThan"
+          countNumber = 10
         }
         action = {
           type = "expire"
