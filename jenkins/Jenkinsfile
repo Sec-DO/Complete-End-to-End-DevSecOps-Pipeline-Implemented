@@ -290,34 +290,31 @@ EOF
         always {
             script {
                 try {
-                    if (env.DEVSECOPS_TEAM_EMAIL) {
-                        emailext (
-                            subject: "SecDO DevSecOps Pipeline Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                            body: """
-                            <h2>SecDO DevSecOps Security Audit Notification</h2>
-                            <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
-                            <p><strong>Execution Result:</strong> ${currentBuild.currentResult}</p>
-                            <p><strong>Git Commit:</strong> ${env.IMAGE_TAG_COMMIT}</p>
-                            <br>
-                            <h3>Live Application & Monitoring Links:</h3>
-                            <ul>
-                                <li><a href="http://${env.ALB_DNS_NAME}">Production Web Application</a></li>
-                                <li><a href="http://${env.ALB_DNS_NAME}/health.php">Health Probe API</a></li>
-                                <li><a href="http://${env.ALB_DNS_NAME}:8080">Jenkins CI/CD Console</a></li>
-                                <li><a href="http://${env.ALB_DNS_NAME}:9000">SonarQube SAST Interface</a></li>
-                                <li><a href="http://${env.ALB_DNS_NAME}:3000">Grafana Telemetry Dashboard</a></li>
-                                <li><a href="http://${env.ALB_DNS_NAME}:9090">Prometheus Metrics Explorer</a></li>
-                            </ul>
-                            """,
-                            mimeType: 'text/html',
-                            to: "${env.DEVSECOPS_TEAM_EMAIL}",
-                            attachLog: true
-                        )
-                    } else {
-                        echo "NOTE: Set DEVOPS_TEAM_EMAIL in Jenkins Global Properties to receive email notifications."
-                    }
+                    emailext (
+                        subject: "SecDO DevSecOps Security Audit Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                        body: """
+                        <h2>SecDO DevSecOps Security Compliance Audit Notification</h2>
+                        <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
+                        <p><strong>Execution Status:</strong> <span style="color: green; font-weight: bold;">${currentBuild.currentResult}</span></p>
+                        <p><strong>Git Commit SHA:</strong> ${env.IMAGE_TAG_COMMIT}</p>
+                        <br>
+                        <h3>Live Production Infrastructure Links:</h3>
+                        <ul>
+                            <li><a href="http://${env.ALB_DNS_NAME}">Production Web Application</a></li>
+                            <li><a href="http://${env.ALB_DNS_NAME}/health.php">Health Probe API Endpoint</a></li>
+                            <li><a href="http://${env.ALB_DNS_NAME}:8080">Jenkins CI/CD Console</a></li>
+                            <li><a href="http://${env.ALB_DNS_NAME}:9000">SonarQube SAST Interface</a></li>
+                            <li><a href="http://${env.ALB_DNS_NAME}:3000">Grafana Telemetry Dashboard</a></li>
+                            <li><a href="http://${env.ALB_DNS_NAME}:9090">Prometheus Metrics Explorer</a></li>
+                        </ul>
+                        """,
+                        mimeType: 'text/html',
+                        recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'CulpritsRecipientProvider']],
+                        to: "${env.DEVSECOPS_TEAM_EMAIL ?: env.BUILD_USER_EMAIL}",
+                        attachLog: true
+                    )
                 } catch (Exception e) {
-                    echo "Email Step Note: ${e.getMessage()}"
+                    echo "Email Notification Status: ${e.getMessage()}"
                 }
             }
             cleanWs()
