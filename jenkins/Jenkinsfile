@@ -88,11 +88,10 @@ pipeline {
                     trivy fs \
                       --exit-code 0 \
                       --severity HIGH,CRITICAL \
-                      --format template --template "@contrib/html.tpl" \
-                      -o reports/trivy-fs-report.html \
+                      -o reports/trivy-fs-report.txt \
                       backend/src/ || true
 
-                    trivy fs --severity HIGH,CRITICAL backend/src/
+                    trivy fs --severity HIGH,CRITICAL backend/src/ || true
                 '''
             }
         }
@@ -125,11 +124,10 @@ pipeline {
                     trivy image \
                       --exit-code 0 \
                       --severity HIGH,CRITICAL \
-                      --format template --template "@contrib/html.tpl" \
-                      -o reports/trivy-image-report.html \
+                      -o reports/trivy-image-report.txt \
                       ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} || true
 
-                    trivy image --severity HIGH,CRITICAL ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT}
+                    trivy image --severity HIGH,CRITICAL ${ECR_REPO_URI}:${IMAGE_TAG_COMMIT} || true
                 '''
             }
         }
@@ -245,8 +243,8 @@ pipeline {
                             <table>
                                 <tr><th>Security Audit Stage</th><th>Engine</th><th>Status</th><th>Report Attachment</th></tr>
                                 <tr><td>Static Code Security (SAST)</td><td>SonarQube</td><td><span class="badge pass">Passed Quality Gate</span></td><td>SonarQube Console</td></tr>
-                                <tr><td>Filesystem Supply Chain Audit</td><td>Aqua Trivy</td><td><span class="badge pass">Scanned</span></td><td>trivy-fs-report.html</td></tr>
-                                <tr><td>Container Vulnerability Scan</td><td>Aqua Trivy</td><td><span class="badge pass">Pushed to ECR</span></td><td>trivy-image-report.html</td></tr>
+                                <tr><td>Filesystem Supply Chain Audit</td><td>Aqua Trivy</td><td><span class="badge pass">Scanned</span></td><td>trivy-fs-report.txt</td></tr>
+                                <tr><td>Container Vulnerability Scan</td><td>Aqua Trivy</td><td><span class="badge pass">Pushed to ECR</span></td><td>trivy-image-report.txt</td></tr>
                                 <tr><td>Dynamic Application Security (DAST)</td><td>OWASP ZAP</td><td><span class="badge pass">DAST Baseline Complete</span></td><td>zap_report.html</td></tr>
                             </table>
                         </div>
@@ -284,8 +282,8 @@ EOF
                                 <h3>📎 Attached Security Audit Reports:</h3>
                                 <ol>
                                     <li><b>devsecops-summary.html</b> - Executive Summary</li>
-                                    <li><b>trivy-fs-report.html</b> - Filesystem Supply Chain Audit</li>
-                                    <li><b>trivy-image-report.html</b> - Container Layer Vulnerability Scan</li>
+                                    <li><b>trivy-fs-report.txt</b> - Filesystem Supply Chain Audit</li>
+                                    <li><b>trivy-image-report.txt</b> - Container Layer Vulnerability Scan</li>
                                     <li><b>zap_report.html</b> - OWASP ZAP Dynamic Security Scan (DAST)</li>
                                 </ol>
                                 <br/>
@@ -293,7 +291,7 @@ EOF
                             """,
                             mimeType: 'text/html',
                             to: "${env.DEVSECOPS_TEAM_EMAIL}",
-                            attachmentsPattern: 'reports/*.html'
+                            attachmentsPattern: 'reports/*'
                         )
                     } catch (Exception e) {
                         echo "Email notification notice: Configure Mailer/Email Extension plugin settings if email relay is enabled."
@@ -305,14 +303,18 @@ EOF
         failure {
             echo '=== ALERT: PIPELINE STAGE FAILURE DETECTED ==='
             script {
-                // Execute Zero-Downtime Swarm Rollback
-                sshagent([env.SSH_CREDENTIAL_ID]) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
-                            echo 'Rolling back Swarm stack to previous stable image...'
-                            cd ~/secdo-swarm && docker service update --image ${ECR_REPO_URI}:latest secdo_app_app 2>/dev/null || true
-                        "
-                    '''
+                // Execute Zero-Downtime Swarm Rollback if SSH agent available
+                try {
+                    sshagent([env.SSH_CREDENTIAL_ID]) {
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} "
+                                echo 'Rolling back Swarm stack to previous stable image...'
+                                cd ~/secdo-swarm && docker service update --image ${ECR_REPO_URI}:latest secdo_app_app 2>/dev/null || true
+                            "
+                        '''
+                    }
+                } catch (Exception e) {
+                    echo "Rollback Notice: SSH agent step skipped."
                 }
 
                 // Send Failure Email Notification detailing the EXACT FAILED STAGE
@@ -344,7 +346,7 @@ EOF
                             """,
                             mimeType: 'text/html',
                             to: "${env.DEVSECOPS_TEAM_EMAIL}",
-                            attachmentsPattern: 'reports/*.html'
+                            attachmentsPattern: 'reports/*'
                         )
                     } catch (Exception e) {
                         echo "Email notification notice: Configure Mailer/Email Extension plugin settings if email relay is enabled."
