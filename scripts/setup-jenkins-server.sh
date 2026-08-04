@@ -1,5 +1,5 @@
 #!/bin/bash
-# SecDO - Complete Automated Jenkins, Java 21, Docker, SonarScanner & SonarQube Installer
+# SecDO - Complete Automated Jenkins, Java 21, Docker, AWS CLI v2, SonarScanner & SonarQube Installer
 # Operating System: Ubuntu 24.04 / 22.04 LTS
 
 set -e
@@ -13,6 +13,16 @@ echo "======================================"
 echo " Installing Required Utilities & PHP CLI"
 echo "======================================"
 sudo apt install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release unzip git maven net-tools htop jq php-cli
+
+echo "======================================"
+echo " Installing AWS CLI v2"
+echo "======================================"
+if ! command -v aws &> /dev/null; then
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip -q awscliv2.zip
+    sudo ./aws/install
+    rm -rf aws awscliv2.zip
+fi
 
 echo "======================================"
 echo " Installing Java 21"
