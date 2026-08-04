@@ -1,5 +1,5 @@
 #!/bin/bash
-# SecDO - Complete Automated Jenkins, Java 21, Docker & SonarQube Installer
+# SecDO - Complete Automated Jenkins, Java 21, Docker, SonarScanner & SonarQube Installer
 # Operating System: Ubuntu 24.04 / 22.04 LTS
 
 set -e
@@ -47,6 +47,17 @@ sudo systemctl enable --now docker
 sudo usermod -aG docker ubuntu 2>/dev/null || true
 sudo usermod -aG docker jenkins 2>/dev/null || true
 sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+
+echo "======================================"
+echo " Installing SonarScanner CLI"
+echo "======================================"
+if [ ! -f /usr/local/bin/sonar-scanner ]; then
+    wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+    unzip -q sonar-scanner-cli-5.0.1.3006-linux.zip
+    sudo mv sonar-scanner-5.0.1.3006-linux /opt/sonar-scanner
+    sudo ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
+    rm -f sonar-scanner-cli-5.0.1.3006-linux.zip
+fi
 
 echo "======================================"
 echo " Installing Aqua Trivy Scanner"
