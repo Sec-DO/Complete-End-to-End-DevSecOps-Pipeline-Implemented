@@ -7,17 +7,17 @@ pipeline {
     }
 
     environment {
-        AWS_REGION         = "${env.AWS_REGION ?: 'ap-south-1'}"
-        ECR_REPO_NAME      = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
-        AWS_ACCOUNT_ID     = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
-        ECR_REPO_URI       = ''
-        IMAGE_TAG_BUILD    = "${BUILD_NUMBER}"
-        IMAGE_TAG_COMMIT   = ""
-        IMAGE_TAG_LATEST   = "latest"
-        APP_SERVER_IP      = "${env.APP_SERVER_IP}" // Set via Jenkins Environment Variables
-        SONAR_SERVER_NAME  = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
-        SSH_CREDENTIAL_ID  = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
-        DEVOPS_TEAM_EMAIL  = "${env.DEVOPS_TEAM_EMAIL}" // Set via Jenkins Environment Variables
+        AWS_REGION            = "${env.AWS_REGION ?: 'ap-south-1'}"
+        ECR_REPO_NAME         = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
+        AWS_ACCOUNT_ID        = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
+        ECR_REPO_URI          = ''
+        IMAGE_TAG_BUILD       = "${BUILD_NUMBER}"
+        IMAGE_TAG_COMMIT      = ""
+        IMAGE_TAG_LATEST      = "latest"
+        APP_SERVER_IP         = "${env.APP_SERVER_IP}" // Set via Jenkins Environment Variables
+        SONAR_SERVER_NAME     = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
+        SSH_CREDENTIAL_ID     = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
+        DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}" // Configured via Jenkins Environment Variables
     }
 
     options {
@@ -223,18 +223,18 @@ pipeline {
                     </head>
                     <body>
                         <div class="container">
-                            <h2>SecDO DevSecOps Security Compliance Report</h2>
+                            <h2>SecDO DevSecOps Security Compliance Audit Report</h2>
                             <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
                             <p><strong>Git Commit:</strong> ${IMAGE_TAG_COMMIT}</p>
                             <p><strong>Deployment Status:</strong> <span class="badge pass">SUCCESS (Docker Swarm Live)</span></p>
                             
                             <h3>Executed Security Audits</h3>
                             <table>
-                                <tr><th>Security Stage</th><th>Engine</th><th>Status</th></tr>
-                                <tr><td>Static Code Analysis (SAST)</td><td>SonarQube</td><td><span class="badge pass">Passed Quality Gate</span></td></tr>
-                                <tr><td>Filesystem Supply Chain</td><td>Aqua Trivy</td><td><span class="badge pass">Scanned</span></td></tr>
-                                <tr><td>Container Vulnerability Scan</td><td>Aqua Trivy</td><td><span class="badge pass">Pushed to ECR</span></td></tr>
-                                <tr><td>Dynamic Security Testing (DAST)</td><td>OWASP ZAP</td><td><span class="badge pass">DAST Baseline Complete</span></td></tr>
+                                <tr><th>Security Audit Stage</th><th>Engine</th><th>Status</th><th>Report Attachment</th></tr>
+                                <tr><td>Static Code Security (SAST)</td><td>SonarQube</td><td><span class="badge pass">Passed Quality Gate</span></td><td>SonarQube Console</td></tr>
+                                <tr><td>Filesystem Supply Chain Audit</td><td>Aqua Trivy</td><td><span class="badge pass">Scanned</span></td><td>trivy-fs-report.html</td></tr>
+                                <tr><td>Container Vulnerability Scan</td><td>Aqua Trivy</td><td><span class="badge pass">Pushed to ECR</span></td><td>trivy-image-report.html</td></tr>
+                                <tr><td>Dynamic Application Security (DAST)</td><td>OWASP ZAP</td><td><span class="badge pass">DAST Baseline Complete</span></td><td>zap_report.html</td></tr>
                             </table>
                         </div>
                     </body>
@@ -247,34 +247,41 @@ EOF
 
     post {
         always {
-            echo '=== STAGE 13: Dispatching DevSecOps Security Compliance Email Report ==='
+            echo '=== STAGE 13: Dispatching Security Compliance Reports to DevSecOps Team ==='
             script {
-                if (env.DEVOPS_TEAM_EMAIL) {
+                if (env.DEVSECOPS_TEAM_EMAIL) {
                     try {
                         emailext (
-                            subject: "SecDO DevSecOps Pipeline Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
+                            subject: "SECURITY REPORT: SecDO DevSecOps Audit - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
                             body: """
-                                <h2>SecDO CI/CD Security Compliance Report</h2>
-                                <p>Hello DevOps Team,</p>
-                                <p>The automated DevSecOps pipeline execution for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
+                                <h2>SecDO DevSecOps Security Audit Compliance Report</h2>
+                                <p>Dear DevSecOps Security Team,</p>
+                                <p>The automated security compliance pipeline run for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
+                                <h3>Audit Details:</h3>
                                 <ul>
-                                    <li><b>Git Commit:</b> ${env.IMAGE_TAG_COMMIT}</li>
-                                    <li><b>ECR Image Tag:</b> ${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</li>
-                                    <li><b>Target Server:</b> Docker Swarm Cluster (${env.APP_SERVER_IP})</li>
+                                    <li><b>Git Commit SHA:</b> ${env.IMAGE_TAG_COMMIT}</li>
+                                    <li><b>ECR Private Image:</b> ${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</li>
+                                    <li><b>Target Host:</b> Production Docker Swarm (${env.APP_SERVER_IP})</li>
                                 </ul>
-                                <p>Attached are the complete SonarQube SAST, Trivy Vulnerability, and OWASP ZAP DAST security audit reports.</p>
+                                <h3>Attached Security Compliance Audit Reports:</h3>
+                                <ol>
+                                    <li><b>devsecops-summary.html</b> - Consolidated Security Audit Summary</li>
+                                    <li><b>trivy-fs-report.html</b> - Filesystem & Dependency Vulnerability Report</li>
+                                    <li><b>trivy-image-report.html</b> - Container Layer Security Scan Report</li>
+                                    <li><b>zap_report.html</b> - OWASP ZAP Dynamic Application Security Testing (DAST) Audit</li>
+                                </ol>
                                 <br/>
-                                <p><i>SecDO Automated Pipeline Engine</i></p>
+                                <p><i>SecDO Automated Security Compliance Engine</i></p>
                             """,
                             mimeType: 'text/html',
-                            to: "${env.DEVOPS_TEAM_EMAIL}",
+                            to: "${env.DEVSECOPS_TEAM_EMAIL}",
                             attachmentsPattern: 'reports/*.html'
                         )
                     } catch (Exception e) {
                         echo "Email notification notice: Configure Jenkins Mailer/Email Extension plugin settings if email relay is enabled."
                     }
                 } else {
-                    echo "Notice: DEVOPS_TEAM_EMAIL environment variable not configured. Skipping email dispatch."
+                    echo "Notice: DEVSECOPS_TEAM_EMAIL environment variable not configured. Skipping email report dispatch."
                 }
             }
             cleanWs()
