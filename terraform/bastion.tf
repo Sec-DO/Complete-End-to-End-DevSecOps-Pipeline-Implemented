@@ -1,11 +1,11 @@
-# Bastion Host (Jump Server) Provisioning in Public Subnet
+# Bastion Host (Jump Server) Provisioning in Public Subnet (Mumbai ap-south-1)
 
 resource "aws_security_group" "bastion_sg" {
   name        = "${var.project_name}-bastion-sg"
   description = "Security Group for Public Bastion Host"
   vpc_id      = aws_vpc.secdo_vpc.id
 
-  # Inbound SSH Access from anywhere or admin IP
+  # Inbound SSH Access
   ingress {
     description = "SSH Access to Bastion Host"
     from_port   = 22
@@ -14,7 +14,7 @@ resource "aws_security_group" "bastion_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound All Traffic to VPC Private Subnets
+  # Outbound All Traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -30,7 +30,7 @@ resource "aws_security_group" "bastion_sg" {
 
 # Bastion Host EC2 Instance
 resource "aws_instance" "bastion_host" {
-  ami                         = var.ami_id
+  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = "t3.micro"
   key_name                    = var.ssh_key_name
   subnet_id                   = aws_subnet.public_subnet_1.id
@@ -49,6 +49,7 @@ resource "aws_instance" "bastion_host" {
     Name        = "${var.project_name}-bastion-host"
     Role        = "Public Jump Server"
     Subnet      = "Public Subnet 1a"
+    Region      = var.aws_region
     Environment = var.environment
   }
 }

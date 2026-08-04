@@ -1,9 +1,9 @@
-# Terraform Variables Configuration for SecDO Infrastructure
+# Terraform Variables Configuration for SecDO Infrastructure (Mumbai Region)
 
 variable "aws_region" {
   description = "AWS region for infrastructure deployment"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-south-1" # Mumbai Region
 }
 
 variable "environment" {
@@ -19,9 +19,9 @@ variable "project_name" {
 }
 
 variable "ami_id" {
-  description = "Ubuntu 24.04 LTS AMI ID (default for us-east-1)"
+  description = "Ubuntu 24.04 LTS AMI ID for ap-south-1 (Optional override, dynamic lookup enabled)"
   type        = string
-  default     = "ami-0e86e20dae9224db8" # Ubuntu 24.04 LTS AMI ID
+  default     = ""
 }
 
 variable "jenkins_instance_type" {

@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     triggers {
-        // Automatically trigger pipeline upon GitHub Webhook Push event or SCM change
+        // Automatically trigger pipeline upon GitHub Webhook Push event
         githubPush()
     }
 
     environment {
-        AWS_REGION         = 'us-east-1'
+        AWS_REGION         = 'ap-south-1' // Configured for Mumbai Region
         ECR_REPO_NAME      = 'secdo-app-repo'
         AWS_ACCOUNT_ID     = '' // Populated dynamically via keyless aws sts get-caller-identity
         ECR_REPO_URI       = ''
@@ -125,7 +125,7 @@ pipeline {
             }
         }
 
-        stage('8. AWS ECR Keyless Login & Push') {
+        stage('8. AWS ECR Keyless Login & Push (Mumbai)') {
             steps {
                 echo '=== STAGE 8: Authenticating and Pushing Container Image to Private AWS ECR ==='
                 sh '''
@@ -222,7 +222,7 @@ pipeline {
                     </head>
                     <body>
                         <div class="container">
-                            <h2>SecDO DevSecOps Security Compliance Report</h2>
+                            <h2>SecDO DevSecOps Security Compliance Report (Mumbai - ap-south-1)</h2>
                             <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
                             <p><strong>Git Commit:</strong> ${IMAGE_TAG_COMMIT}</p>
                             <p><strong>Deployment Status:</strong> <span class="badge pass">SUCCESS (Docker Swarm Live)</span></p>
@@ -252,7 +252,7 @@ EOF
                     emailext (
                         subject: "SecDO DevSecOps Pipeline Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
                         body: """
-                            <h2>SecDO CI/CD Security Compliance Report</h2>
+                            <h2>SecDO CI/CD Security Compliance Report (ap-south-1)</h2>
                             <p>Hello DevOps Team,</p>
                             <p>The automated DevSecOps pipeline execution for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
                             <ul>
@@ -262,7 +262,7 @@ EOF
                             </ul>
                             <p>Attached are the complete SonarQube SAST, Trivy Vulnerability, and OWASP ZAP DAST security audit reports.</p>
                             <br/>
-                            <p><i>SecDO Automated Pipeline Engine</i></p>
+                            <p><i>SecDO Automated Pipeline Engine (Mumbai)</i></p>
                         """,
                         mimeType: 'text/html',
                         to: "${env.DEVOPS_TEAM_EMAIL}",
