@@ -25,21 +25,21 @@ variable "ami_id" {
 }
 
 variable "bastion_instance_type" {
-  description = "Instance size for Public Bastion SSH Jump Host (Free-Tier eligible)"
+  description = "Instance size for Public Bastion SSH Jump Host"
   type        = string
   default     = "t3.micro"
 }
 
 variable "jenkins_instance_type" {
-  description = "Instance size for Jenkins CI/CD & SonarQube SAST Server"
+  description = "Instance size for Jenkins CI/CD & SonarQube Server"
   type        = string
-  default     = "t3.medium"
+  default     = "m7i-flex.large" # 2 vCPU, 8 GiB RAM
 }
 
 variable "app_instance_type" {
   description = "Instance size for Application Docker Swarm & Monitoring Server"
   type        = string
-  default     = "t3.small"
+  default     = "m7i-flex.large" # 2 vCPU, 8 GiB RAM
 }
 
 variable "ecr_repo_name" {
