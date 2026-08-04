@@ -2,54 +2,31 @@ version: '3.8'
 
 services:
   app:
-    image: ${ECR_REPO_URI}:${IMAGE_TAG}
+    image: ${ECR_REPO_URI}:${IMAGE_TAG:-latest}
+    container_name: secdo-app
+    restart: always
     ports:
       - "80:80"
     environment:
       - DB_HOST=db
       - DB_NAME=secdo_db
       - DB_USER=secdo_user
-      - DB_PASSWORD=${DB_PASSWORD:-secdo_password}
-      - APP_VERSION=${IMAGE_TAG}
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        failure_action: rollback
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health.php"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - secdo-swarm-net
+      - DB_PASSWORD=secdo_pass
+    depends_on:
+      - db
 
   db:
-    image: mariadb:11.2
+    image: mariadb:11
+    container_name: secdo-db
+    restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_secdo_secret}
+      - MYSQL_ROOT_PASSWORD=root_pass
       - MYSQL_DATABASE=secdo_db
       - MYSQL_USER=secdo_user
-      - MYSQL_PASSWORD=${DB_PASSWORD:-secdo_password}
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
+      - MYSQL_PASSWORD=secdo_pass
     volumes:
-      - swarm_db_data:/var/lib/mysql
-    networks:
-      - secdo-swarm-net
-
-networks:
-  secdo-swarm-net:
-    driver: overlay
+      - mariadb_data:/var/lib/mysql
 
 volumes:
-  swarm_db_data:
-    driver: local
+  mariadb_data:
+EOF
