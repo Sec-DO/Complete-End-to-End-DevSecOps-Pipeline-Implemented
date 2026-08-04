@@ -363,9 +363,10 @@ EOF
                         <h3>Attached Reports</h3>
 
                         <ul>
-                            <li>📄 Trivy Image Scan Report</li>
-                            <li>📄 OWASP ZAP HTML Report</li>
-                            <li>📄 DevSecOps Executive Summary</li>
+                            <li>📄 Trivy Filesystem Scan Report (`trivy-fs-report.txt`)</li>
+                            <li>📄 Trivy Image Scan Report (`trivy-image-report.txt`)</li>
+                            <li>📄 OWASP ZAP DAST HTML Report (`zap_report.html`)</li>
+                            <li>📄 Executive DevSecOps Audit Summary (`devsecops-summary.html`)</li>
                         </ul>
 
                         <p>The application was successfully built, scanned, deployed and verified.</p>
@@ -376,7 +377,7 @@ EOF
                         </body>
                         </html>
                         """,
-                        attachmentsPattern: 'reports/*',
+                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
                         recipientProviders: [],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
@@ -428,7 +429,7 @@ EOF
                         </body>
                         </html>
                         """,
-                        attachmentsPattern: 'reports/*',
+                        attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
                         recipientProviders: [],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
