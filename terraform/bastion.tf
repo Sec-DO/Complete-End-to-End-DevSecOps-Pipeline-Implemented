@@ -31,7 +31,7 @@ resource "aws_security_group" "bastion_sg" {
 # Bastion Host EC2 Instance
 resource "aws_instance" "bastion_host" {
   ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
-  instance_type               = "t3.micro"
+  instance_type               = var.bastion_instance_type
   key_name                    = var.ssh_key_name
   subnet_id                   = aws_subnet.public_subnet_1.id
   vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
