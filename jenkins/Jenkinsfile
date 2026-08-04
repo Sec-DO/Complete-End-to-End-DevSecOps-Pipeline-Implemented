@@ -327,7 +327,7 @@ EOF
                         <div class="success-header">✅ SecDO Pipeline Completed Successfully</div>
 
                         <table>
-                            <tr>
+                            <tr style="background-color: #f2f2f2;">
                                 <th>Field</th>
                                 <th>Value</th>
                             </tr>
@@ -342,7 +342,7 @@ EOF
                         <h3>Pipeline Summary</h3>
 
                         <table>
-                            <tr>
+                            <tr style="background-color: #f2f2f2;">
                                 <th>Stage</th>
                                 <th>Status</th>
                             </tr>
@@ -363,10 +363,9 @@ EOF
                         <h3>Attached Reports</h3>
 
                         <ul>
-                            <li>📄 Trivy Filesystem Scan Report (`trivy-fs-report.txt`)</li>
-                            <li>📄 Trivy Image Scan Report (`trivy-image-report.txt`)</li>
-                            <li>📄 OWASP ZAP DAST HTML Report (`zap_report.html`)</li>
-                            <li>📄 Executive DevSecOps Audit Summary (`devsecops-summary.html`)</li>
+                            <li>📄 Trivy Image Scan Report</li>
+                            <li>📄 OWASP ZAP HTML Report</li>
+                            <li>📄 DevSecOps Executive Summary</li>
                         </ul>
 
                         <p>The application was successfully built, scanned, deployed and verified.</p>
@@ -378,7 +377,6 @@ EOF
                         </html>
                         """,
                         attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
-                        recipientProviders: [],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
                 } catch (Exception e) {
@@ -430,7 +428,6 @@ EOF
                         </html>
                         """,
                         attachmentsPattern: 'reports/trivy-fs-report.txt, reports/trivy-image-report.txt, reports/zap_report.html, reports/devsecops-summary.html',
-                        recipientProviders: [],
                         to: 'patilrahulprafulla1@gmail.com'
                     )
                 } catch (Exception e) {
