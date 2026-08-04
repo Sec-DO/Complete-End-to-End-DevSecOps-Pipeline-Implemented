@@ -15,10 +15,11 @@ pipeline {
         IMAGE_TAG_COMMIT     = ""
         IMAGE_TAG_LATEST     = "latest"
         APP_SERVER_IP        = "${env.APP_SERVER_IP ?: '10.0.20.60'}" // Deployed Private IP
-        ALB_DNS_NAME         = "${env.ALB_DNS_NAME ?: 'secdo-alb-124066993.ap-south-1.elb.amazonaws.com'}" // Deployed ALB DNS Name
+        ALB_DNS_NAME         = "secdo-alb-124066993.ap-south-1.elb.amazonaws.com" // Deployed ALB DNS Name
         SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
         EMAIL_TO             = "${env.DEVSECOPS_TEAM_EMAIL ?: 'patilrahulprafulla1@gmail.com'}"
-        TARGET_URL           = "http://${env.ALB_DNS_NAME ?: 'secdo-alb-124066993.ap-south-1.elb.amazonaws.com'}"
+        TARGET_URL           = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com"
+        JENKINS_JOB_URL      = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080/job/SecDO-Pipeline"
         BRANCH               = "main"
         FAILED_STAGE         = "Unknown Stage"
     }
@@ -298,16 +299,22 @@ EOF
 
         success {
             script {
+                def jobBuildUrl = "${env.JENKINS_JOB_URL}/${BUILD_NUMBER}/"
+                def appUrl = "${env.TARGET_URL}"
+                def sonarUrl = "http://${env.ALB_DNS_NAME}:9000"
+
                 try {
                     mail to: "${env.EMAIL_TO}",
                          subject: "✅ SUCCESS | SecDO Pipeline #${BUILD_NUMBER}",
                          body: """SecDO Pipeline Completed Successfully!
+
+Project: ${JOB_NAME}
 Build Number: #${BUILD_NUMBER}
+Status: SUCCESS
 Branch: ${env.BRANCH}
-Application: ${env.TARGET_URL}
-Build URL: ${env.BUILD_URL}
-SonarQube: http://${env.ALB_DNS_NAME}:9000
-Grafana: http://${env.ALB_DNS_NAME}:3000
+Build URL: ${jobBuildUrl}
+Application: ${appUrl}
+SonarQube: ${sonarUrl}
 """
 
                     emailext(
@@ -316,21 +323,28 @@ Grafana: http://${env.ALB_DNS_NAME}:3000
                         body: """
                         <html>
                         <body>
+
                         <h2 style="color:green;">✅ SecDO Pipeline Completed Successfully</h2>
+
                         <table border="1" cellpadding="6" cellspacing="0">
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="green"><b>SUCCESS</b></font></td></tr>
                             <tr><td><b>Branch</b></td><td>${env.BRANCH}</td></tr>
-                            <tr><td><b>Build URL</b></td><td><a href="${env.BUILD_URL}">${env.BUILD_URL}</a></td></tr>
-                            <tr><td><b>Application</b></td><td><a href="${env.TARGET_URL}">${env.TARGET_URL}</a></td></tr>
-                            <tr><td><b>SonarQube</b></td><td><a href="http://${env.ALB_DNS_NAME}:9000">View Dashboard</a></td></tr>
+                            <tr><td><b>Build URL</b></td><td><a href="${jobBuildUrl}">${jobBuildUrl}</a></td></tr>
+                            <tr><td><b>Application</b></td><td><a href="${appUrl}">${appUrl}</a></td></tr>
+                            <tr><td><b>SonarQube</b></td><td><a href="${sonarUrl}">View Dashboard</a></td></tr>
                         </table>
 
                         <br>
+
                         <h3>Pipeline Summary</h3>
+
                         <table border="1" cellpadding="5" cellspacing="0">
-                        <tr><th>Stage</th><th>Status</th></tr>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Status</th>
+                        </tr>
                         <tr><td>Checkout Source Code</td><td>✅ Passed</td></tr>
                         <tr><td>SonarQube Analysis</td><td>✅ Passed</td></tr>
                         <tr><td>Build Docker Image</td><td>✅ Passed</td></tr>
@@ -341,18 +355,26 @@ Grafana: http://${env.ALB_DNS_NAME}:3000
                         </table>
 
                         <br>
-                        <h3>Attached Security Audit Reports</h3>
+
+                        <h3>Attached Reports</h3>
+
                         <ul>
-                            <li>📄 Trivy Image & Filesystem Scan Reports</li>
-                            <li>📄 OWASP ZAP DAST HTML Report</li>
-                            <li>📄 SecDO DevSecOps Executive Summary</li>
+                        <li>📄 Trivy Filesystem & Image Scan Reports</li>
+                        <li>📄 OWASP ZAP HTML Security Report</li>
+                        <li>📄 DevSecOps Executive Summary</li>
                         </ul>
 
                         <br>
-                        <p>The application was successfully built, scanned, deployed and verified.</p>
+
+                        <p>
+                        The application was successfully built, scanned, deployed and verified.
+                        </p>
+
                         <br>
+
                         Regards,<br>
                         <b>SecDO DevSecOps Pipeline</b>
+
                         </body>
                         </html>
                         """,
@@ -367,10 +389,12 @@ Grafana: http://${env.ALB_DNS_NAME}:3000
 
         failure {
             script {
+                def jobBuildUrl = "${env.JENKINS_JOB_URL}/${BUILD_NUMBER}/"
+
                 try {
                     mail to: "${env.EMAIL_TO}",
                          subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
-                         body: "SecDO Pipeline Failed at Stage: ${env.FAILED_STAGE}.\nBuild URL: ${env.BUILD_URL}"
+                         body: "SecDO Pipeline Failed at Stage: ${env.FAILED_STAGE}.\nBuild URL: ${jobBuildUrl}"
 
                     emailext(
                         subject: "❌ FAILED | SecDO Pipeline #${BUILD_NUMBER}",
@@ -378,16 +402,23 @@ Grafana: http://${env.ALB_DNS_NAME}:3000
                         body: """
                         <html>
                         <body>
+
                         <h2 style="color:red;">❌ SecDO Pipeline Failed</h2>
+
                         <table border="1" cellpadding="6" cellspacing="0">
                             <tr><td><b>Project</b></td><td>${JOB_NAME}</td></tr>
                             <tr><td><b>Build Number</b></td><td>#${BUILD_NUMBER}</td></tr>
                             <tr><td><b>Status</b></td><td><font color="red"><b>FAILED</b></font></td></tr>
                             <tr><td><b>Failed Stage</b></td><td>${env.FAILED_STAGE}</td></tr>
-                            <tr><td><b>Build URL</b></td><td><a href="${env.BUILD_URL}">${env.BUILD_URL}</a></td></tr>
+                            <tr><td><b>Build URL</b></td><td><a href="${jobBuildUrl}">${jobBuildUrl}</a></td></tr>
                         </table>
+
                         <br>
-                        <p>Please review the attached security reports and Jenkins console log.</p>
+
+                        <p>
+                        Please review the attached reports and Jenkins console log.
+                        </p>
+
                         </body>
                         </html>
                         """,
