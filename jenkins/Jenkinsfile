@@ -34,7 +34,7 @@ pipeline {
                 echo '=== STAGE 1: Automated GitHub Checkout ==='
                 checkout scm
                 script {
-                    env.IMAGE_TAG_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG_COMMIT = sh(script: 'git rev-parse --short HEAD || echo "v${BUILD_NUMBER}"', returnStdout: true).trim()
                     echo "Git Commit SHA: ${env.IMAGE_TAG_COMMIT}"
                     sh 'mkdir -p reports'
                 }
@@ -104,12 +104,13 @@ pipeline {
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
                     ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+                    COMMIT_TAG=$(git rev-parse --short HEAD 2>/dev/null || echo "v${BUILD_NUMBER}")
                     echo "Target ECR URI: ${ECR_URI}"
 
                     docker build \
                         -f docker/Dockerfile.app \
-                        -t ${ECR_URI}:${IMAGE_TAG_BUILD} \
-                        -t ${ECR_URI}:${IMAGE_TAG_COMMIT} \
+                        -t ${ECR_URI}:${BUILD_NUMBER} \
+                        -t ${ECR_URI}:${COMMIT_TAG} \
                         -t ${ECR_URI}:latest .
                 '''
             }
@@ -128,9 +129,9 @@ pipeline {
                       --exit-code 0 \
                       --severity HIGH,CRITICAL \
                       -o reports/trivy-image-report.txt \
-                      ${ECR_URI}:${IMAGE_TAG_BUILD} || true
+                      ${ECR_URI}:${BUILD_NUMBER} || true
 
-                    trivy image --severity HIGH,CRITICAL ${ECR_URI}:${IMAGE_TAG_BUILD} || true
+                    trivy image --severity HIGH,CRITICAL ${ECR_URI}:${BUILD_NUMBER} || true
                 '''
             }
         }
@@ -143,12 +144,13 @@ pipeline {
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
                     ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+                    COMMIT_TAG=$(git rev-parse --short HEAD 2>/dev/null || echo "v${BUILD_NUMBER}")
 
                     aws ecr get-login-password --region ${AWS_REGION} | \
                     docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                    docker push ${ECR_URI}:${IMAGE_TAG_BUILD}
-                    docker push ${ECR_URI}:${IMAGE_TAG_COMMIT}
+                    docker push ${ECR_URI}:${BUILD_NUMBER}
+                    docker push ${ECR_URI}:${COMMIT_TAG}
                     docker push ${ECR_URI}:latest
                 '''
             }
