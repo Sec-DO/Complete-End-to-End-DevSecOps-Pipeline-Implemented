@@ -1,80 +1,103 @@
-# SecDO – Automated CI/CD & Security Compliance Pipeline
+# SecDO – End-to-End Enterprise DevSecOps & Cloud Compliance Platform
 
-[![DevSecOps](https://img.shields.io/badge/DevSecOps-Automated%20Pipeline-blue.svg)](https://github.com/therahulpatil/Module1-ProgrammingConcepts)
-[![AWS ECR](https://img.shields.io/badge/AWS-ECR%20%26%20EC2-orange.svg)](https://aws.amazon.com/)
-[![Jenkins](https://img.shields.io/badge/Jenkins-18--Stage%20Pipeline-red.svg)](https://www.jenkins.io/)
-[![SonarQube](https://img.shields.io/badge/Security-SonarQube%20%26%20Trivy-green.svg)](https://www.sonarqube.org/)
+[![DevSecOps](https://img.shields.io/badge/DevSecOps-Automated%20Pipeline-blue.svg)](https://github.com/Sec-DO/Complete-End-to-End-DevSecOps-Pipeline-Implemented.git)
+[![AWS Infrastructure](https://img.shields.io/badge/AWS-ECR%20%7C%20EC2%20%7C%20ALB-orange.svg)](https://aws.amazon.com/)
+[![Jenkins](https://img.shields.io/badge/Jenkins-Automated%20CI%2FCD-red.svg)](https://www.jenkins.io/)
+[![Security Audits](https://img.shields.io/badge/Security-SonarQube%20%7C%20Trivy%20%7C%20OWASP%20ZAP%20%7C%20Prowler%20v4-green.svg)](https://www.sonarqube.org/)
 
-**SecDO** is an enterprise-grade DevSecOps pipeline designed for cloud applications deployed on AWS. It automates static code security analysis (SAST), software supply chain auditing (Trivy), multi-stage Docker containerization, keyless AWS ECR registry pushes via IAM Instance Profiles (`aws sts get-caller-identity`), zero-downtime EC2 deployment, automated healthprobe probes with instant failure rollback, and real-time observability using Prometheus, Grafana, Node Exporter, and cAdvisor.
+**SecDO** is a production-ready, enterprise-grade DevSecOps platform and Cloud Security Posture Management (CSPM) system built on AWS. It automates static application security testing (SonarQube SAST), software supply chain vulnerability audits (Aqua Trivy FS & Image), multi-stage Docker containerization, keyless AWS ECR registry authentication via IAM Instance Profiles, Docker Swarm cluster deployments, dynamic security testing (OWASP ZAP DAST), real-time observability (Prometheus + Grafana + cAdvisor + Node Exporter), and deep AWS cloud infrastructure compliance auditing (Checkov + tfsec + Gitleaks + Prowler v4).
 
 ---
 
-## 🏗️ Architecture & Network Design
+## 🌐 Live System Infrastructure Matrix
+
+| Service | Access URL / Details | Protocol / Port | Authentication |
+| :--- | :--- | :--- | :--- |
+| **Production Web App** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com` | HTTP / `80` | Public Access |
+| **Healthprobe Readiness API** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com/health.php` | HTTP / `80` | Public Probe |
+| **Jenkins CI/CD Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080` | HTTP / `8080` | `admin` / `Sunbeam@2002` |
+| **SonarQube SAST Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9000` | HTTP / `9000` | `admin` / `admin` |
+| **Grafana Observability** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:3000` | HTTP / `3000` | `admin` / `admin_secdo_monitoring` |
+| **Prometheus Telemetry** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9090` | HTTP / `9090` | Public Access |
+| **cAdvisor Container Engine** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8081` | HTTP / `8081` | Public Access |
+| **AWS Private ECR Registry** | `325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr` | Docker TLS | Keyless STS Token |
+
+---
+
+## 🏗️ Architecture & AWS Topology
 
 ```
 +---------------------------------------------------------------------------------------------------+
-|                                      AWS Custom VPC (10.0.0.0/16)                                 |
+|                                 AWS Custom VPC (10.0.0.0/16) - ap-south-1                         |
 |                                                                                                   |
 |  +-------------------------------------------+   +---------------------------------------------+  |
-|  |           Public Subnet 1a (10.0.1.0/24)  |   |             Public Subnet 1b (10.0.2.0/24)   |  |
+|  |       Public Subnet 1a (10.0.10.0/24)     |   |       Public Subnet 1b (10.0.20.0/24)     |  |
 |  |                                           |   |                                             |  |
 |  |  +-------------------------------------+  |   |  +---------------------------------------+  |  |
-|  |  |      Jenkins CI/CD EC2 Instance     |  |   |  |     Application & Monitoring Host     |  |  |
-|  |  |  - Jenkins Engine (8080)             |  |   |  |  - SecDO App Stack (80/443)             |  |  |
-|  |  |  - SonarQube SAST (9000)            |  |   |  |  - Prometheus Telemetry (9090)        |  |  |
-|  |  |  - Trivy Security Scanner           |  |   |  |  - Grafana Dashboards (3000)          |  |  |
-|  |  |  - IAM Instance Profile Attached    |  |   |  |  - cAdvisor (8081) / Node Exporter    |  |  |
-|  |  +-------------------------------------+  |   |  +---------------------------------------+  |  |
+|  |  |      Jenkins CI/CD EC2 Instance     |  |   |  |     Application & Monitoring Server   |  |  |
+|  |  |  - Jenkins 2.504 (Port 8080)        |  |   |  |  - SecDO App Stack (PHP 8.3 Apache)  |  |  |
+|  |  |  - SonarQube SAST (Port 9000)       |  |   |  |  - MariaDB 11 Database Engine        |  |  |
+|  |  |  - Java 21, AWS CLI v2, Trivy     |  |   |  |  - Docker Swarm Cluster Node        |  |  |
+|  |  |  - IAM Instance Profile Attached    |  |   |  |  - Prometheus (9090) / Grafana (3000)|  |  |
+|  |  +-------------------------------------+  |   |  |  - cAdvisor (8081) / Node Exporter  |  |  |
+|  |                                           |   |  +---------------------------------------+  |  |
 |  +-------------------------------------------+   +---------------------------------------------+  |
 |                        |                                                |                         |
 |                        +-----------------------+------------------------+                         |
 |                                                |                                                  |
 |                        +-----------------------v------------------------+                         |
-|                        |       Internet Gateway (0.0.0.0/0)             |                         |
+|                        |     AWS Application Load Balancer (ALB)        |                         |
+|                        |   secdo-alb-124066993.ap-south-1.elb.amazonaws.com|                         |
 |                        +------------------------------------------------+                         |
 +---------------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Pipelines Overview
 
-1. **Keyless AWS IAM Authentication**: Zero hardcoded access keys. Uses AWS STS (`aws sts get-caller-identity`) and IAM Instance Profiles.
-2. **Comprehensive SAST & Vulnerability Auditing**: Integrated SonarQube Quality Gates and Trivy filesystem/container image scanning.
-3. **Multi-Stage Container Hardening**: PHP 8.3 Apache container execution restricted under non-root `www-data` unprivileged user.
-4. **Automated Zero-Downtime Rollback**: `health-check.sh` polls the `/health.php` endpoint after deployment. If probes fail, `rollback.sh` immediately falls back to the previous stable image tag.
-5. **Full Observability Stack**: Real-time CPU, memory, disk, network, and container telemetry via Prometheus + Grafana.
+### 1. Main DevSecOps CI/CD Pipeline (`jenkins/Jenkinsfile`)
+Executes 12 automated stages upon GitHub Push webhooks:
+1. **Checkout Source Code**: Clones Git repository and extracts commit SHA.
+2. **Build & Code Syntax Validation**: Validates PHP syntax (`php -l`).
+3. **SonarQube SAST Scan**: Executes static security scanning.
+4. **SonarQube Quality Gate Check**: Evaluates security quality gate thresholds.
+5. **Trivy Filesystem Scan**: Audits filesystem dependencies for vulnerabilities.
+6. **Docker Multi-Stage Build**: Containerizes application using PHP 8.3 Apache.
+7. **Trivy Container Image Scan**: Scans container layers for HIGH/CRITICAL CVEs.
+8. **AWS ECR Keyless Login & Push**: Authenticates via IAM Instance Profile STS tokens and pushes `latest` and `${BUILD_NUMBER}` tags.
+9. **Docker Swarm Cluster Deployment**: Deploys application stack to production Application server.
+10. **Application Health Check Probe**: Polls `/health.php` endpoint up to 15 times until HTTP 200 OK.
+11. **OWASP ZAP DAST Scan**: Executes dynamic containerized baseline security testing.
+12. **Consolidate Security Reports**: Archives artifacts and sends HTML summary emails with 4 attached report files to all 4 team members.
 
----
-
-## 🔄 18-Stage CI/CD Security Pipeline
-
-| Stage # | Stage Name | Description |
-| :--- | :--- | :--- |
-| **1** | Checkout | Pulls latest code & extracts Git Commit SHA |
-| **2** | Build & Syntax Check | Validates PHP codebase syntax (`php -l`) |
-| **3** | Unit Verification | Executes unit validation probes |
-| **4** | SonarQube SAST | Performs static application security testing |
-| **5** | Quality Gate Check | Evaluates SonarQube security rules & thresholds |
-| **6** | Trivy Filesystem Scan | Audits repository files for secrets & vulnerabilities |
-| **7** | Docker Multi-Stage Build | Builds production hardened container images |
-| **8** | Trivy Image Scan | Scans container layers for HIGH/CRITICAL CVEs |
-| **9** | ECR Login (Keyless) | Obtains short-lived IAM STS token via `aws ecr get-login-password` |
-| **10** | Push to ECR | Pushes `latest`, `BUILD_NUMBER`, and `GIT_COMMIT` image tags |
-| **11** | SSH Setup | Establishes encrypted SSH session to target host |
-| **12** | ECR Pull | Pulls target container images on Application server |
-| **13** | Compose Deployment | Updates container services via `docker-compose-ecr.yml` |
-| **14** | Health Probe Check | Polls `/health.php` endpoint up to 10 retries |
-| **15** | Automated Rollback | Triggered automatically on probe failure |
-| **16** | Workspace Cleanup | Prunes dangling Docker image layers |
-| **17** | Success Notification | Logs successful pipeline execution details |
-| **18** | Failure Alert Hook | Configured for Slack/Email alert dispatch |
+### 2. Deep AWS Infrastructure Compliance Audit Pipeline (`jenkins/Jenkinsfile-ca`)
+Executes 8 automated cloud posture & IaC security audit stages:
+1. **Checkout Repository**: Pulls latest Terraform IaC code.
+2. **Gitleaks Secret Audit**: Scans commit history for hardcoded AWS keys or passwords.
+3. **Terraform Format & Syntax Audit**: Runs `hashicorp/terraform` container validation.
+4. **Checkov CIS Benchmarks & PCI-DSS Audit**: Audits IaC against CIS AWS Benchmarks v3.0, PCI-DSS, and HIPAA.
+5. **tfsec AWS Misconfiguration Audit**: Scans for unencrypted storage or open security groups.
+6. **Prowler v4 Deep AWS Live Security Audit**: Executes Prowler v4 containerized live cloud audit against AWS Account `325698037625`.
+7. **Live AWS Security Groups, IAM Roles & Policy Audit**: Audits live security group ports, IAM roles, and customer policies.
+8. **Consolidate Compliance Executive Report**: Sends HTML compliance summary emails with 6 attached report files to all 4 team members.
 
 ---
 
-## 🛠️ Quick Start & Setup Guide
+## 📧 Team Email Routing Configuration
 
-### 1. Infrastructure Provisioning via Terraform
+- **Sender**: `patilrahulprafulla@gmail.com`
+- **Recipient List**:
+  1. `patilrahulprafulla1@gmail.com`
+  2. `dangerushi19@gmail.com`
+  3. `ameybhalerao004@gmail.com`
+  4. `ashutoshkabade1961@gmail.com`
+
+---
+
+## 🛠️ Infrastructure Setup & Execution Commands
+
+### 1. Provision AWS Infrastructure via Terraform
 ```bash
 cd SecDO/terraform
 terraform init
@@ -82,26 +105,18 @@ terraform plan
 terraform apply -auto-approve
 ```
 
-### 2. Local Stack Execution (Development)
+### 2. Deploy Application Stack via Docker Swarm
 ```bash
-docker compose -f deployment/docker-compose.yml up -d --build
-curl -i http://localhost/health.php
+cd SecDO/deployment
+docker swarm init
+docker stack deploy -c docker-swarm.yml secdo_app
 ```
 
-### 3. Monitoring Stack Execution
+### 3. Deploy Observability Stack (Prometheus + Grafana + cAdvisor)
 ```bash
-docker compose -f monitoring/docker-compose-monitoring.yml up -d
+cd SecDO/scripts
+./setup-app-server.sh
 ```
-Access Grafana at `http://<APP_HOST_IP>:3000` (Default credentials: `admin` / `admin_secdo_monitoring`).
-
----
-
-## 🛡️ Security Compliance Standards
-
-- **Zero Secret Sprawl**: Secret keys are never stored in repositories or Jenkins credentials text.
-- **OWASP HTTP Security Headers**: Implemented in `backend/src/index.php`.
-- **Least Privilege Execution**: Docker containers switch to `USER www-data`.
-- **Least Privilege IAM**: Jenkins IAM Role restricted strictly to necessary ECR & EC2 operations.
 
 ---
 
