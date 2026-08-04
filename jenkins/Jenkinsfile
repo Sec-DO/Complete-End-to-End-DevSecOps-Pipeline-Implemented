@@ -7,17 +7,18 @@ pipeline {
     }
 
     environment {
-        AWS_REGION            = "${env.AWS_REGION ?: 'ap-south-1'}"
-        ECR_REPO_NAME         = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
-        AWS_ACCOUNT_ID        = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
-        ECR_REPO_URI          = ''
-        IMAGE_TAG_BUILD       = "${BUILD_NUMBER}"
-        IMAGE_TAG_COMMIT      = ""
-        IMAGE_TAG_LATEST      = "latest"
-        APP_SERVER_IP         = "${env.APP_SERVER_IP}" // Set via Jenkins Environment Variables
-        SONAR_SERVER_NAME     = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
-        SSH_CREDENTIAL_ID     = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
-        DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}" // Configured via Jenkins Environment Variables
+        AWS_REGION           = "${env.AWS_REGION ?: 'ap-south-1'}"
+        ECR_REPO_NAME        = "${env.ECR_REPO_NAME ?: 'secdo-ecr'}"
+        AWS_ACCOUNT_ID       = '' // Discovered dynamically at runtime via keyless aws sts get-caller-identity
+        ECR_REPO_URI         = ''
+        IMAGE_TAG_BUILD      = "${BUILD_NUMBER}"
+        IMAGE_TAG_COMMIT     = ""
+        IMAGE_TAG_LATEST     = "latest"
+        APP_SERVER_IP        = "${env.APP_SERVER_IP}" // Set via Jenkins Environment Variables
+        ALB_DNS_NAME         = "${env.ALB_DNS_NAME ?: env.APP_SERVER_IP}" // ALB Public DNS Name
+        SONAR_SERVER_NAME    = "${env.SONAR_SERVER_NAME ?: 'SonarQube'}"  
+        SSH_CREDENTIAL_ID    = "${env.SSH_CREDENTIAL_ID ?: 'SecDO.pem'}"
+        DEVSECOPS_TEAM_EMAIL = "${env.DEVSECOPS_TEAM_EMAIL ?: env.DEVOPS_TEAM_EMAIL}"
     }
 
     options {
@@ -247,31 +248,43 @@ EOF
 
     post {
         always {
-            echo '=== STAGE 13: Dispatching Security Compliance Reports to DevSecOps Team ==='
+            echo '=== STAGE 13: Dispatching Security Compliance Reports & Service URLs to DevSecOps Team ==='
             script {
                 if (env.DEVSECOPS_TEAM_EMAIL) {
                     try {
                         emailext (
-                            subject: "SECURITY REPORT: SecDO DevSecOps Audit - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
+                            subject: "SECURITY AUDIT: SecDO DevSecOps Compliance Report - Build #${BUILD_NUMBER} [${currentBuild.currentResult}]",
                             body: """
                                 <h2>SecDO DevSecOps Security Audit Compliance Report</h2>
                                 <p>Dear DevSecOps Security Team,</p>
-                                <p>The automated security compliance pipeline run for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b>${currentBuild.currentResult}</b>.</p>
-                                <h3>Audit Details:</h3>
+                                <p>The automated security compliance pipeline run for <b>Build #${BUILD_NUMBER}</b> has completed with status: <b style="color:green;">${currentBuild.currentResult}</b>.</p>
+                                
+                                <h3>📌 Live Service Access URLs:</h3>
+                                <ul>
+                                    <li><b>Production Web Application:</b> <a href="http://${env.ALB_DNS_NAME}">http://${env.ALB_DNS_NAME}</a></li>
+                                    <li><b>Application Health Probe API:</b> <a href="http://${env.ALB_DNS_NAME}/health.php">http://${env.ALB_DNS_NAME}/health.php</a></li>
+                                    <li><b>Jenkins Web Console:</b> <a href="http://${env.ALB_DNS_NAME}:8080">http://${env.ALB_DNS_NAME}:8080</a></li>
+                                    <li><b>SonarQube SAST Interface:</b> <a href="http://${env.ALB_DNS_NAME}:9000">http://${env.ALB_DNS_NAME}:9000</a></li>
+                                    <li><b>Grafana Observability Dashboard:</b> <a href="http://${env.ALB_DNS_NAME}:3000">http://${env.ALB_DNS_NAME}:3000</a></li>
+                                    <li><b>Prometheus Metrics Explorer:</b> <a href="http://${env.ALB_DNS_NAME}:9090">http://${env.ALB_DNS_NAME}:9090</a></li>
+                                </ul>
+
+                                <h3>📦 Build & Container Details:</h3>
                                 <ul>
                                     <li><b>Git Commit SHA:</b> ${env.IMAGE_TAG_COMMIT}</li>
-                                    <li><b>ECR Private Image:</b> ${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</li>
+                                    <li><b>ECR Private Image Tag:</b> <code>${env.ECR_REPO_URI}:${env.IMAGE_TAG_COMMIT}</code></li>
                                     <li><b>Target Host:</b> Production Docker Swarm (${env.APP_SERVER_IP})</li>
                                 </ul>
-                                <h3>Attached Security Compliance Audit Reports:</h3>
+
+                                <h3>📎 Attached Security Audit Reports:</h3>
                                 <ol>
-                                    <li><b>devsecops-summary.html</b> - Consolidated Security Audit Summary</li>
-                                    <li><b>trivy-fs-report.html</b> - Filesystem & Dependency Vulnerability Report</li>
-                                    <li><b>trivy-image-report.html</b> - Container Layer Security Scan Report</li>
-                                    <li><b>zap_report.html</b> - OWASP ZAP Dynamic Application Security Testing (DAST) Audit</li>
+                                    <li><b>devsecops-summary.html</b> - Executive Summary</li>
+                                    <li><b>trivy-fs-report.html</b> - Filesystem Supply Chain Audit</li>
+                                    <li><b>trivy-image-report.html</b> - Container Layer Vulnerability Scan</li>
+                                    <li><b>zap_report.html</b> - OWASP ZAP Dynamic Security Scan (DAST)</li>
                                 </ol>
                                 <br/>
-                                <p><i>SecDO Automated Security Compliance Engine</i></p>
+                                <p><i>SecDO Automated DevSecOps Compliance Engine</i></p>
                             """,
                             mimeType: 'text/html',
                             to: "${env.DEVSECOPS_TEAM_EMAIL}",
