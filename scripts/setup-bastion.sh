@@ -1,11 +1,11 @@
 #!/bin/bash
 # SecDO - Bastion Host Setup Script
-# Includes Passwordless SSH configuration for Jump Host routing into Private Subnets
+# Installs AWS CLI v2, SSH Agent Forwarding, and Node Exporter Telemetry Agent (Port 9100)
 
 set -e
 
 echo "================================================="
-echo "Starting Bastion Host Setup & Passwordless SSH Config..."
+echo "Starting Bastion Host Setup & Telemetry Agent..."
 echo "================================================="
 
 sudo apt-get update -y
@@ -34,7 +34,29 @@ if [ ! -f "$HOME/.ssh/id_rsa" ]; then
     ssh-keygen -t rsa -b 2048 -f "$HOME/.ssh/id_rsa" -N ""
 fi
 
+# Deploy Node Exporter Container for Bastion EC2 Server Metrics (Port 9100)
+echo "Deploying Node Exporter Telemetry Agent on Bastion Host..."
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker ubuntu || true
+sudo systemctl enable --now docker
+
+if ! sudo docker ps -a | grep -q bastion-node-exporter; then
+    sudo docker run -d --name bastion-node-exporter \
+        --restart unless-stopped \
+        -p 9100:9100 \
+        -v /proc:/host/proc:ro \
+        -v /sys:/host/sys:ro \
+        -v /:/rootfs:ro \
+        prom/node-exporter:v1.7.0 \
+        --path.procfs=/host/proc \
+        --path.sysfs=/host/sys
+fi
+
 echo "================================================="
 echo "Bastion Host Setup Complete!"
-echo "Passwordless SSH Agent Forwarding Configured for 10.0.* subnets."
+echo "Node Exporter Telemetry Active on Port 9100."
 echo "================================================="
