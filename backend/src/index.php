@@ -12,8 +12,7 @@ header("Referrer-Policy: strict-origin-when-cross-origin");
 
 require_once __DIR__ . '/db.php';
 
-$db = new Database();
-$conn = $db->getConnection();
+$conn = isset($pdo) ? $pdo : null;
 $db_status = $conn ? '<span class="status-badge badge-up">Connected (MariaDB 11)</span>' : '<span class="status-badge badge-down">Disconnected / Initializing</span>';
 $app_version = getenv('APP_VERSION') ?: '1.0.0';
 $hostname = gethostname();
@@ -22,13 +21,19 @@ $message = "";
 // Backend Form Handler: Register / Insert Audit Log Entry into MariaDB
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'log_event' && $conn) {
-        $event_name = trim($_POST['event_name'] ?? 'Pipeline Verification');
-        $severity = trim($_POST['severity'] ?? 'INFO');
-        $details = trim($_POST['details'] ?? 'Manual web application interaction test.');
+        $event_type = trim($_POST['event_name'] ?? 'Pipeline Verification');
+        $description = trim($_POST['details'] ?? 'Manual web application interaction test.');
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Browser';
 
         try {
-            $stmt = $conn->prepare("INSERT INTO audit_logs (event_name, severity, details) VALUES (:event, :severity, :details)");
-            $stmt->execute([':event' => $event_name, ':severity' => $severity, ':details' => $details]);
+            $stmt = $conn->prepare("INSERT INTO audit_logs (event_type, description, ip_address, user_agent) VALUES (:event_type, :description, :ip_address, :user_agent)");
+            $stmt->execute([
+                ':event_type' => $event_type,
+                ':description' => $description,
+                ':ip_address' => $ip_address,
+                ':user_agent' => $user_agent
+            ]);
             $message = '<div class="alert alert-success">✓ Event successfully written to MariaDB database!</div>';
         } catch (PDOException $e) {
             $message = '<div class="alert alert-danger">Error writing event: ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -43,7 +48,7 @@ if ($conn) {
         $stmt = $conn->query("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 5");
         $audit_logs = $stmt->fetchAll();
     } catch (PDOException $e) {
-        // Table created via init.sql
+        // Table created via init.sql / db.php
     }
 }
 ?>
@@ -271,19 +276,19 @@ if ($conn) {
                         <tr>
                             <th>ID</th>
                             <th>Timestamp</th>
-                            <th>Event Name</th>
-                            <th>Severity</th>
-                            <th>Details</th>
+                            <th>Event Type</th>
+                            <th>Description</th>
+                            <th>Client IP</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($audit_logs as $log): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($log['id']); ?></td>
-                                <td><?php echo htmlspecialchars($log['created_at']); ?></td>
-                                <td><?php echo htmlspecialchars($log['event_name']); ?></td>
-                                <td><span class="status-badge badge-up"><?php echo htmlspecialchars($log['severity']); ?></span></td>
-                                <td><?php echo htmlspecialchars($log['details']); ?></td>
+                                <td><?php echo htmlspecialchars($log['timestamp']); ?></td>
+                                <td><?php echo htmlspecialchars($log['event_type']); ?></td>
+                                <td><?php echo htmlspecialchars($log['description']); ?></td>
+                                <td><span class="status-badge badge-up"><?php echo htmlspecialchars($log['ip_address']); ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
