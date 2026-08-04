@@ -345,13 +345,18 @@ SonarQube: ${sonarUrl}
                             <th>Stage</th>
                             <th>Status</th>
                         </tr>
-                        <tr><td>Checkout Source Code</td><td>✅ Passed</td></tr>
-                        <tr><td>SonarQube Analysis</td><td>✅ Passed</td></tr>
-                        <tr><td>Build Docker Image</td><td>✅ Passed</td></tr>
-                        <tr><td>Trivy Image Scan</td><td>✅ Passed</td></tr>
-                        <tr><td>Docker Push</td><td>✅ Passed</td></tr>
-                        <tr><td>Deployment</td><td>✅ Passed</td></tr>
-                        <tr><td>OWASP ZAP Scan</td><td>✅ Passed</td></tr>
+                        <tr><td>1. Checkout Source Code</td><td>✅ Passed</td></tr>
+                        <tr><td>2. Build & Code Syntax Validation</td><td>✅ Passed</td></tr>
+                        <tr><td>3. SonarQube SAST Scan</td><td>✅ Passed</td></tr>
+                        <tr><td>4. SonarQube Quality Gate Check</td><td>✅ Passed</td></tr>
+                        <tr><td>5. Trivy Filesystem Scan</td><td>✅ Passed</td></tr>
+                        <tr><td>6. Docker Multi-Stage Image Build</td><td>✅ Passed</td></tr>
+                        <tr><td>7. Trivy Container Image Scan</td><td>✅ Passed</td></tr>
+                        <tr><td>8. AWS ECR Keyless Login & Push</td><td>✅ Passed</td></tr>
+                        <tr><td>9. Docker Swarm Cluster Deployment</td><td>✅ Passed</td></tr>
+                        <tr><td>10. Application Health Check Probe</td><td>✅ Passed</td></tr>
+                        <tr><td>11. OWASP ZAP DAST Scan</td><td>✅ Passed</td></tr>
+                        <tr><td>12. Consolidate Security Reports</td><td>✅ Passed</td></tr>
                         </table>
 
                         <br>
@@ -359,9 +364,9 @@ SonarQube: ${sonarUrl}
                         <h3>Attached Reports</h3>
 
                         <ul>
-                        <li>📄 Trivy Filesystem & Image Scan Reports</li>
-                        <li>📄 OWASP ZAP HTML Security Report</li>
-                        <li>📄 DevSecOps Executive Summary</li>
+                        <li>📄 Trivy Filesystem & Container Image Reports</li>
+                        <li>📄 OWASP ZAP HTML Security Audit Report</li>
+                        <li>📄 DevSecOps Executive Summary Report</li>
                         </ul>
 
                         <br>
