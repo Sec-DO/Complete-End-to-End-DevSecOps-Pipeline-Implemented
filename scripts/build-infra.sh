@@ -1,6 +1,6 @@
 #!/bin/bash
 # SecDO - Automated Infrastructure Provisioning Script (Build Infra)
-# Provision AWS VPC, Subnets, ALB, Bastion Host, Jenkins EC2, App EC2, and ECR Repo via Terraform
+# Optimized for Windows Git Bash & Linux AWS CLI Credential Discovery
 
 set -e
 
@@ -11,6 +11,18 @@ echo "================================================="
 echo "SecDO Infrastructure Build Execution"
 echo "Target Region: ap-south-1 (Mumbai)"
 echo "================================================="
+
+# Detect Windows/Git Bash HOME path for AWS credentials file
+if [ -n "$USERPROFILE" ] && [ -f "$USERPROFILE/.aws/credentials" ]; then
+    export AWS_SHARED_CREDENTIALS_FILE="$USERPROFILE/.aws/credentials"
+    export AWS_CONFIG_FILE="$USERPROFILE/.aws/config"
+elif [ -f "$HOME/.aws/credentials" ]; then
+    export AWS_SHARED_CREDENTIALS_FILE="$HOME/.aws/credentials"
+    export AWS_CONFIG_FILE="$HOME/.aws/config"
+fi
+
+export AWS_DEFAULT_REGION="ap-south-1"
+export AWS_REGION="ap-south-1"
 
 if [ ! -d "$TERRAFORM_DIR" ]; then
     echo "ERROR: Terraform directory not found at $TERRAFORM_DIR"
