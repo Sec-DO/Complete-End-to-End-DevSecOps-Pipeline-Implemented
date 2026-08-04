@@ -287,13 +287,39 @@ EOF
     }
 
     post {
-        success {
-            echo '=== PIPELINE COMPLETED SUCCESSFULLY: Security Compliance Reports Generated ==='
-            cleanWs()
-        }
-
-        failure {
-            echo '=== ALERT: PIPELINE STAGE FAILURE DETECTED ==='
+        always {
+            script {
+                try {
+                    if (env.DEVSECOPS_TEAM_EMAIL) {
+                        emailext (
+                            subject: "SecDO DevSecOps Pipeline Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                            body: """
+                            <h2>SecDO DevSecOps Security Audit Notification</h2>
+                            <p><strong>Build Number:</strong> #${BUILD_NUMBER}</p>
+                            <p><strong>Execution Result:</strong> ${currentBuild.currentResult}</p>
+                            <p><strong>Git Commit:</strong> ${env.IMAGE_TAG_COMMIT}</p>
+                            <br>
+                            <h3>Live Application & Monitoring Links:</h3>
+                            <ul>
+                                <li><a href="http://${env.ALB_DNS_NAME}">Production Web Application</a></li>
+                                <li><a href="http://${env.ALB_DNS_NAME}/health.php">Health Probe API</a></li>
+                                <li><a href="http://${env.ALB_DNS_NAME}:8080">Jenkins CI/CD Console</a></li>
+                                <li><a href="http://${env.ALB_DNS_NAME}:9000">SonarQube SAST Interface</a></li>
+                                <li><a href="http://${env.ALB_DNS_NAME}:3000">Grafana Telemetry Dashboard</a></li>
+                                <li><a href="http://${env.ALB_DNS_NAME}:9090">Prometheus Metrics Explorer</a></li>
+                            </ul>
+                            """,
+                            mimeType: 'text/html',
+                            to: "${env.DEVSECOPS_TEAM_EMAIL}",
+                            attachLog: true
+                        )
+                    } else {
+                        echo "NOTE: Set DEVOPS_TEAM_EMAIL in Jenkins Global Properties to receive email notifications."
+                    }
+                } catch (Exception e) {
+                    echo "Email Step Note: ${e.getMessage()}"
+                }
+            }
             cleanWs()
         }
     }
