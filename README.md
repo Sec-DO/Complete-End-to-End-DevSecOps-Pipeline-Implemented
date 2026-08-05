@@ -20,7 +20,7 @@
 | **Grafana Observability** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:3000` | HTTP / `3000` | `admin` / `admin_secdo_monitoring` |
 | **Prometheus Telemetry** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9090` | HTTP / `9090` | Public Access |
 | **cAdvisor Container Engine** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8081` | HTTP / `8081` | Public Access |
-| **AWS Private ECR Registry** | `325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr` | Docker TLS | Keyless STS Token |
+| **AWS Private ECR Registry** | `325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr` | Docker TLS | Keyless STS Token ||
 
 ---
 
