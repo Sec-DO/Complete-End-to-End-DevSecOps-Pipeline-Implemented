@@ -56,10 +56,20 @@ pipeline {
             }
         }
 
-        stage('3. SonarQube SAST Scan') {
+        stage('3. Automated Unit & Integration Testing') {
             steps {
-                script { env.FAILED_STAGE = '3. SonarQube SAST Scan' }
-                echo '=== STAGE 3: Running SonarQube Static Application Security Scan ==='
+                script { env.FAILED_STAGE = '3. Automated Unit & Integration Testing' }
+                echo '=== STAGE 3: Executing Automated Application Unit & Integration Tests ==='
+                sh '''
+                    php backend/tests/UnitTest.php
+                '''
+            }
+        }
+
+        stage('4. SonarQube SAST Scan') {
+            steps {
+                script { env.FAILED_STAGE = '4. SonarQube SAST Scan' }
+                echo '=== STAGE 4: Running SonarQube Static Application Security Scan ==='
                 withSonarQubeEnv("${env.SONAR_SERVER_NAME}") {
                     sh '''
                         sonar-scanner \
@@ -71,10 +81,10 @@ pipeline {
             }
         }
 
-        stage('4. SonarQube Quality Gate Check') {
+        stage('5. SonarQube Quality Gate Check') {
             steps {
-                script { env.FAILED_STAGE = '4. SonarQube Quality Gate Check' }
-                echo '=== STAGE 4: Evaluating SonarQube Quality Gate ==='
+                script { env.FAILED_STAGE = '5. SonarQube Quality Gate Check' }
+                echo '=== STAGE 5: Evaluating SonarQube Quality Gate ==='
                 timeout(time: 5, unit: 'MINUTES') {
                     script {
                         try {
@@ -88,10 +98,10 @@ pipeline {
             }
         }
 
-        stage('5. Trivy Filesystem Scan') {
+        stage('6. Trivy Filesystem Scan') {
             steps {
-                script { env.FAILED_STAGE = '5. Trivy Filesystem Scan' }
-                echo '=== STAGE 5: Trivy Filesystem Security Audit ==='
+                script { env.FAILED_STAGE = '6. Trivy Filesystem Scan' }
+                echo '=== STAGE 6: Trivy Filesystem Security Audit ==='
                 sh '''
                     trivy fs \
                       --exit-code 0 \
@@ -104,10 +114,10 @@ pipeline {
             }
         }
 
-        stage('6. Docker Multi-Stage Image Build') {
+        stage('7. Docker Multi-Stage Image Build') {
             steps {
-                script { env.FAILED_STAGE = '6. Docker Multi-Stage Image Build' }
-                echo '=== STAGE 6: Building Production Multi-Stage Docker Image ==='
+                script { env.FAILED_STAGE = '7. Docker Multi-Stage Image Build' }
+                echo '=== STAGE 7: Building Production Multi-Stage Docker Image ==='
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
@@ -124,10 +134,10 @@ pipeline {
             }
         }
 
-        stage('7. Trivy Container Image Scan') {
+        stage('8. Trivy Container Image Scan') {
             steps {
-                script { env.FAILED_STAGE = '7. Trivy Container Image Scan' }
-                echo '=== STAGE 7: Trivy Container Image Security Vulnerability Scan ==='
+                script { env.FAILED_STAGE = '8. Trivy Container Image Scan' }
+                echo '=== STAGE 8: Trivy Container Image Security Vulnerability Scan ==='
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
@@ -144,10 +154,10 @@ pipeline {
             }
         }
 
-        stage('8. AWS ECR Keyless Login & Push') {
+        stage('9. AWS ECR Keyless Login & Push') {
             steps {
-                script { env.FAILED_STAGE = '8. AWS ECR Keyless Login & Push' }
-                echo '=== STAGE 8: Authenticating and Pushing Container Image to Private AWS ECR ==='
+                script { env.FAILED_STAGE = '9. AWS ECR Keyless Login & Push' }
+                echo '=== STAGE 9: Authenticating and Pushing Container Image to Private AWS ECR ==='
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
@@ -164,10 +174,10 @@ pipeline {
             }
         }
 
-        stage('9. Docker Swarm Cluster Deployment') {
+        stage('10. Docker Swarm Cluster Deployment') {
             steps {
-                script { env.FAILED_STAGE = '9. Docker Swarm Cluster Deployment' }
-                echo '=== STAGE 9: Deploying to Production Application Server via Docker Swarm ==='
+                script { env.FAILED_STAGE = '10. Docker Swarm Cluster Deployment' }
+                echo '=== STAGE 10: Deploying to Production Application Server via Docker Swarm ==='
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "325698037625")
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
@@ -201,10 +211,10 @@ pipeline {
             }
         }
 
-        stage('10. Application Health Check Probe') {
+        stage('11. Application Health Check Probe') {
             steps {
-                script { env.FAILED_STAGE = '10. Application Health Check Probe' }
-                echo '=== STAGE 10: Polling Swarm Service Readiness Probe ==='
+                script { env.FAILED_STAGE = '11. Application Health Check Probe' }
+                echo '=== STAGE 11: Polling Swarm Service Readiness Probe ==='
                 sh '''
                     SSH_CMD="ssh -o StrictHostKeyChecking=no"
                     if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
@@ -228,10 +238,10 @@ pipeline {
             }
         }
 
-        stage('11. OWASP ZAP DAST Scan') {
+        stage('12. OWASP ZAP DAST Scan') {
             steps {
-                script { env.FAILED_STAGE = '11. OWASP ZAP DAST Scan' }
-                echo '=== STAGE 11: Executing OWASP ZAP Dynamic Application Security Testing (DAST) ==='
+                script { env.FAILED_STAGE = '12. OWASP ZAP DAST Scan' }
+                echo '=== STAGE 12: Executing OWASP ZAP Dynamic Application Security Testing (DAST) ==='
                 sh '''
                     echo "Launching Containerized OWASP ZAP Baseline DAST Scan against http://${APP_SERVER_IP}/..."
                     chmod 777 reports || true
@@ -244,10 +254,10 @@ pipeline {
             }
         }
 
-        stage('12. Consolidate DevSecOps Compliance Reports') {
+        stage('13. Consolidate DevSecOps Compliance Reports') {
             steps {
-                script { env.FAILED_STAGE = '12. Consolidate DevSecOps Compliance Reports' }
-                echo '=== STAGE 12: Aggregating SAST, Supply Chain, and DAST Security Reports ==='
+                script { env.FAILED_STAGE = '13. Consolidate DevSecOps Compliance Reports' }
+                echo '=== STAGE 13: Aggregating SAST, Unit Test, Supply Chain, and DAST Security Reports ==='
                 sh '''
                     cat << 'EOF' > reports/devsecops-summary.html
                     <!DOCTYPE html>
@@ -276,6 +286,7 @@ pipeline {
                             <h3>Executed Security Audits</h3>
                             <table>
                                 <tr><th>Security Audit Stage</th><th>Engine</th><th>Status</th><th>Report Attachment</th></tr>
+                                <tr><td>Application Unit & Integration Testing</td><td>PHP Engine</td><td><span class="badge pass">Passed Unit Tests</span></td><td>Console Log</td></tr>
                                 <tr><td>Static Code Security (SAST)</td><td>SonarQube</td><td><span class="badge pass">Passed Quality Gate</span></td><td>SonarQube Console</td></tr>
                                 <tr><td>Filesystem Supply Chain Audit</td><td>Aqua Trivy</td><td><span class="badge pass">Scanned</span></td><td>trivy-fs-report.txt</td></tr>
                                 <tr><td>Container Vulnerability Scan</td><td>Aqua Trivy</td><td><span class="badge pass">Pushed to ECR</span></td><td>trivy-image-report.txt</td></tr>
@@ -351,6 +362,7 @@ EOF
                             </tr>
                             <tr><td>Checkout Source Code</td><td><span class="badge-pass">✅ Passed</span></td></tr>
                             <tr><td>Build & Code Syntax Validation</td><td><span class="badge-pass">✅ Passed</span></td></tr>
+                            <tr><td>Automated Unit & Integration Testing</td><td><span class="badge-pass">✅ Passed</span></td></tr>
                             <tr><td>SonarQube SAST Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
                             <tr><td>SonarQube Quality Gate Check</td><td><span class="badge-pass">✅ Passed</span></td></tr>
                             <tr><td>Trivy Filesystem Scan</td><td><span class="badge-pass">✅ Passed</span></td></tr>
@@ -371,7 +383,7 @@ EOF
                             <li>📄 DevSecOps Executive Summary</li>
                         </ul>
 
-                        <p>The application was successfully built, scanned, deployed and verified.</p>
+                        <p>The application was successfully built, unit tested, scanned, deployed and verified.</p>
 
                         <p>Regards,<br>
                         <b>SecDO DevSecOps Pipeline</b></p>
