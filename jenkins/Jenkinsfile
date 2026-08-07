@@ -187,16 +187,13 @@ pipeline {
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
                     ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-                    KEY_PATH=""
-                    for candidate in /var/lib/jenkins/.ssh/SecDO.pem /var/lib/jenkins/.ssh/id_rsa /home/ubuntu/.ssh/SecDO.pem /home/ubuntu/.ssh/id_rsa /tmp/SecDO.pem; do
-                        if [ -f "$candidate" ]; then
-                            KEY_PATH="$candidate"
-                            break
-                        fi
-                    done
+                    KEY_PATH=$(find /var/lib/jenkins /home/ubuntu /root /tmp -name "*.pem" 2>/dev/null | head -n 1)
+                    if [ -z "$KEY_PATH" ]; then
+                        KEY_PATH=$(find /var/lib/jenkins /home/ubuntu /root /tmp -name "id_rsa" 2>/dev/null | head -n 1)
+                    fi
 
                     if [ -n "$KEY_PATH" ]; then
-                        echo "Using SSH Identity Key: ${KEY_PATH}"
+                        echo "Discovered SSH Key File: ${KEY_PATH}"
                         SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
                         SCP_CMD="scp -o StrictHostKeyChecking=no -i ${KEY_PATH}"
                     else
@@ -230,13 +227,10 @@ pipeline {
                 script { env.FAILED_STAGE = '11. Application Health Check Probe' }
                 echo '=== STAGE 11: Polling Swarm Service Readiness Probe ==='
                 sh '''
-                    KEY_PATH=""
-                    for candidate in /var/lib/jenkins/.ssh/SecDO.pem /var/lib/jenkins/.ssh/id_rsa /home/ubuntu/.ssh/SecDO.pem /home/ubuntu/.ssh/id_rsa /tmp/SecDO.pem; do
-                        if [ -f "$candidate" ]; then
-                            KEY_PATH="$candidate"
-                            break
-                        fi
-                    done
+                    KEY_PATH=$(find /var/lib/jenkins /home/ubuntu /root /tmp -name "*.pem" 2>/dev/null | head -n 1)
+                    if [ -z "$KEY_PATH" ]; then
+                        KEY_PATH=$(find /var/lib/jenkins /home/ubuntu /root /tmp -name "id_rsa" 2>/dev/null | head -n 1)
+                    fi
 
                     if [ -n "$KEY_PATH" ]; then
                         SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
