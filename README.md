@@ -11,16 +11,16 @@
 
 ## 🌐 Live System Infrastructure Matrix
 
-| Service | Access URL / Details | Protocol / Port | Authentication |
-| :--- | :--- | :--- | :--- |
-| **Production Web App** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com` | HTTP / `80` | Public Access |
-| **Healthprobe Readiness API** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com/health.php` | HTTP / `80` | Public Probe |
-| **Jenkins CI/CD Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080` | HTTP / `8080` | `admin` / `Sunbeam@2002` |
-| **SonarQube SAST Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9000` | HTTP / `9000` | `admin` / `admin` |
-| **Grafana Observability** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:3000` | HTTP / `3000` | `admin` / `admin_secdo_monitoring` |
-| **Prometheus Telemetry** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9090` | HTTP / `9090` | Public Access |
-| **cAdvisor Container Engine** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8081` | HTTP / `8081` | Public Access |
-| **AWS Private ECR Registry** | `325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr` | Docker TLS | Keyless STS Token ||
+| Service | Access URL / Details | Protocol / Port |
+| :--- | :--- | :--- |
+| **Production Web App** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com` | HTTP / `80` |
+| **Healthprobe Readiness API** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com/health.php` | HTTP / `80` |
+| **Jenkins CI/CD Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080` | HTTP / `8080` |
+| **SonarQube SAST Server** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9000` | HTTP / `9000` |
+| **Grafana Observability** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:3000` | HTTP / `3000` |
+| **Prometheus Telemetry** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:9090` | HTTP / `9090` |
+| **cAdvisor Container Engine** | `http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8081` | HTTP / `8081` |
+| **AWS Private ECR Registry** | `325698037625.dkr.ecr.ap-south-1.amazonaws.com/secdo-ecr` | Docker TLS ||
 
 ---
 
