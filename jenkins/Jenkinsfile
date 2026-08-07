@@ -193,7 +193,9 @@ pipeline {
                     fi
 
                     if [ -n "$KEY_PATH" ]; then
-                        echo "Discovered SSH Key File: ${KEY_PATH}"
+                        sed -i 's/\\r$//' "${KEY_PATH}" 2>/dev/null || true
+                        chmod 400 "${KEY_PATH}" 2>/dev/null || true
+                        echo "Discovered Validated SSH Key File: ${KEY_PATH}"
                         SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
                         SCP_CMD="scp -o StrictHostKeyChecking=no -i ${KEY_PATH}"
                     else
@@ -217,7 +219,7 @@ pipeline {
                         cd ~/secdo-swarm && \
                         docker stack deploy -c docker-swarm.yml secdo_app --with-registry-auth && \
                         docker service scale secdo_app_app=3 2>/dev/null || true
-                    " || true
+                    "
                 '''
             }
         }
@@ -233,6 +235,7 @@ pipeline {
                     fi
 
                     if [ -n "$KEY_PATH" ]; then
+                        sed -i 's/\\r$//' "${KEY_PATH}" 2>/dev/null || true
                         SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
                     else
                         SSH_CMD="ssh -o StrictHostKeyChecking=no"
