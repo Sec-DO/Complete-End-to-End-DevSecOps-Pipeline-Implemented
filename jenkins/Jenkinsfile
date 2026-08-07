@@ -88,10 +88,14 @@ pipeline {
                 timeout(time: 5, unit: 'MINUTES') {
                     script {
                         try {
-                            waitForQualityGate abortPipeline: false
-                            echo 'SonarQube Quality Gate Passed!'
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                echo "SonarQube Quality Gate Notice: Status is ${qg.status}. Security findings recorded in SonarQube."
+                            } else {
+                                echo "SonarQube Quality Gate Status: PASSED (${qg.status})"
+                            }
                         } catch (Exception e) {
-                            echo 'SonarQube Quality Gate Warning: Audit logged in SonarQube dashboard.'
+                            echo "SonarQube Quality Gate Assessment Note: ${e.getMessage()}"
                         }
                     }
                 }
