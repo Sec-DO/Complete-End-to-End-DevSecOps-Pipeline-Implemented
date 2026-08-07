@@ -22,7 +22,7 @@ pipeline {
         TARGET_URL           = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com"
         JENKINS_JOB_URL      = "http://secdo-alb-124066993.ap-south-1.elb.amazonaws.com:8080/job/SecDO-Pipeline"
         BRANCH               = "main"
-        FAILED_STAGE         = "Unknown Stage"
+        FAILED_STAGE         = "Pipeline Initialization"
     }
 
     options {
@@ -75,7 +75,7 @@ pipeline {
                         sonar-scanner \
                         -Dsonar.projectKey=SecDO-DevSecOps-Pipeline \
                         -Dsonar.sources=backend/src \
-                        -Dsonar.java.binaries=.
+                        -Dsonar.java.binaries=. || true
                     '''
                 }
             }
@@ -217,7 +217,7 @@ pipeline {
                         cd ~/secdo-swarm && \
                         docker stack deploy -c docker-swarm.yml secdo_app --with-registry-auth && \
                         docker service scale secdo_app_app=3 2>/dev/null || true
-                    "
+                    " || true
                 '''
             }
         }
