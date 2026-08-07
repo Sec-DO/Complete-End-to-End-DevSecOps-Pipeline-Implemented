@@ -187,9 +187,22 @@ pipeline {
                     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" = "None" ]; then ACCOUNT_ID="325698037625"; fi
                     ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
-                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
-                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem"
+                    KEY_PATH=""
+                    for candidate in /var/lib/jenkins/.ssh/SecDO.pem /var/lib/jenkins/.ssh/id_rsa /home/ubuntu/.ssh/SecDO.pem /home/ubuntu/.ssh/id_rsa /tmp/SecDO.pem; do
+                        if [ -f "$candidate" ]; then
+                            KEY_PATH="$candidate"
+                            break
+                        fi
+                    done
+
+                    if [ -n "$KEY_PATH" ]; then
+                        echo "Using SSH Identity Key: ${KEY_PATH}"
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
+                        SCP_CMD="scp -o StrictHostKeyChecking=no -i ${KEY_PATH}"
+                    else
+                        echo "WARNING: No explicit SSH key file found. Attempting default SSH agent auth..."
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no"
+                        SCP_CMD="scp -o StrictHostKeyChecking=no"
                     fi
 
                     $SSH_CMD ubuntu@${APP_SERVER_IP} "
@@ -199,11 +212,7 @@ pipeline {
                         mkdir -p ~/secdo-swarm
                     " || true
 
-                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
-                        scp -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
-                    else
-                        scp -o StrictHostKeyChecking=no deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
-                    fi
+                    $SCP_CMD deployment/docker-swarm.yml ubuntu@${APP_SERVER_IP}:~/secdo-swarm/docker-swarm.yml || true
 
                     $SSH_CMD ubuntu@${APP_SERVER_IP} "
                         export ECR_REPO_URI=${ECR_URI}
@@ -221,9 +230,18 @@ pipeline {
                 script { env.FAILED_STAGE = '11. Application Health Check Probe' }
                 echo '=== STAGE 11: Polling Swarm Service Readiness Probe ==='
                 sh '''
-                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
-                    if [ -f "/var/lib/jenkins/.ssh/SecDO.pem" ]; then
-                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/SecDO.pem"
+                    KEY_PATH=""
+                    for candidate in /var/lib/jenkins/.ssh/SecDO.pem /var/lib/jenkins/.ssh/id_rsa /home/ubuntu/.ssh/SecDO.pem /home/ubuntu/.ssh/id_rsa /tmp/SecDO.pem; do
+                        if [ -f "$candidate" ]; then
+                            KEY_PATH="$candidate"
+                            break
+                        fi
+                    done
+
+                    if [ -n "$KEY_PATH" ]; then
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no -i ${KEY_PATH}"
+                    else
+                        SSH_CMD="ssh -o StrictHostKeyChecking=no"
                     fi
 
                     $SSH_CMD ubuntu@${APP_SERVER_IP} "
